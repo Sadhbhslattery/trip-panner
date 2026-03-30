@@ -16,6 +16,7 @@ export default function AddActivity() {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [duration, setDuration] = useState('');
+  const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
@@ -31,6 +32,7 @@ export default function AddActivity() {
       name,
       date,
       duration: Number(duration) || 0,
+      cost: Number(cost) || 0,
       notes: notes || null,
     });
 
@@ -42,13 +44,14 @@ export default function AddActivity() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <ScreenHeader title="Add Activity" subtitle="What are you doing?" />
+        <ScreenHeader title="Add Activity" subtitle="What's the plan?" />
 
         <View style={styles.form}>
-          <FormField label="Activity Name" value={name} onChangeText={setName} placeholder="e.g. Visit the castle" />
+          <FormField label="Activity Name" value={name} onChangeText={setName} placeholder="e.g. Cocktail making class" />
           <FormField label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
-          <FormField label="Duration (minutes)" value={duration} onChangeText={setDuration} placeholder="e.g. 90" />
-          <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Any details..." />
+          <FormField label="Duration (minutes)" value={duration} onChangeText={setDuration} placeholder="e.g. 90 (optional)" />
+          <FormField label="Cost (€)" value={cost} onChangeText={setCost} placeholder="e.g. 360 (total for the group)" />
+          <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Booking ref, who's organising..." />
         </View>
 
         <Text style={styles.categoryLabel}>Category</Text>
@@ -93,7 +96,7 @@ export default function AddActivity() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF8FA',
     flex: 1,
     padding: 20,
   },

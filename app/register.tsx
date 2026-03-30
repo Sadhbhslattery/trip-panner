@@ -26,20 +26,14 @@ export default function RegisterScreen() {
       return;
     }
 
-    const existing = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.username, username));
+    const existing = await db.select().from(usersTable).where(eq(usersTable.username, username));
 
     if (existing.length > 0) {
       Alert.alert('Error', 'Username already taken.');
       return;
     }
 
-    await db.insert(usersTable).values({
-      username,
-      password,
-    });
+    await db.insert(usersTable).values({ username, password });
 
     Alert.alert('Success', 'Account created! You can now log in.', [
       { text: 'OK', onPress: () => router.replace('/login') },
@@ -48,7 +42,7 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Register" subtitle="Create your account." />
+      <ScreenHeader title="Create Account" subtitle="Get started planning." />
 
       <View style={styles.form}>
         <FormField label="Username" value={username} onChangeText={setUsername} placeholder="Pick a username" />
@@ -59,26 +53,14 @@ export default function RegisterScreen() {
       <PrimaryButton label="Create Account" onPress={handleRegister} />
 
       <View style={styles.spacer}>
-        <PrimaryButton
-          label="Already have an account? Log In"
-          variant="secondary"
-          onPress={() => router.replace('/login')}
-        />
+        <PrimaryButton label="Already have an account? Log In" variant="secondary" onPress={() => router.replace('/login')} />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#F8FAFC',
-    flex: 1,
-    padding: 20,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  spacer: {
-    marginTop: 10,
-  },
+  safeArea: { backgroundColor: '#FFF8FA', flex: 1, padding: 20 },
+  form: { marginBottom: 6 },
+  spacer: { marginTop: 10 },
 });

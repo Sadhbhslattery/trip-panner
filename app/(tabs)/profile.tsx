@@ -16,8 +16,7 @@ export default function ProfileScreen() {
   if (!context) return null;
   const { trips, activities, setTrips, setActivities, setCategories, setTargets } = context;
 
-  const totalActivities = activities.length;
-  const totalMinutes = activities.reduce((sum, a) => sum + a.duration, 0);
+  const totalCost = activities.reduce((sum, a) => sum + a.cost, 0);
 
   const handleLogout = () => {
     router.replace('/login');
@@ -26,7 +25,7 @@ export default function ProfileScreen() {
   const handleDeleteAccount = () => {
     Alert.alert(
       'Delete Account',
-      'This will permanently delete your account and all your data. This cannot be undone.',
+      'This will permanently delete your account and all your hen party data. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -38,12 +37,10 @@ export default function ProfileScreen() {
             await db.delete(tripsTable);
             await db.delete(categoriesTable);
             await db.delete(usersTable).where(eq(usersTable.id, 1));
-
             setTrips([]);
             setActivities([]);
             setCategories([]);
             setTargets([]);
-
             router.replace('/register');
           },
         },
@@ -58,59 +55,26 @@ export default function ProfileScreen() {
       <View style={styles.card}>
         <Text style={styles.username}>demo</Text>
         <Text style={styles.statsLine}>
-          {trips.length} trips · {totalActivities} activities · {(totalMinutes / 60).toFixed(1)} hours logged
+          {trips.length} hens · {activities.length} activities · €{totalCost} total spend
         </Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
-
-        <View style={styles.buttonGroup}>
-          <PrimaryButton label="Log Out" variant="secondary" onPress={handleLogout} />
-          <View style={styles.spacer} />
-          <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} />
-        </View>
+        <PrimaryButton label="Log Out" variant="secondary" onPress={handleLogout} />
+        <View style={styles.spacer} />
+        <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#F8FAFC',
-    flex: 1,
-    paddingHorizontal: 18,
-    paddingTop: 10,
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
-    borderRadius: 14,
-    borderWidth: 1,
-    marginTop: 12,
-    padding: 18,
-  },
-  username: {
-    color: '#111827',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  statsLine: {
-    color: '#6B7280',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  section: {
-    marginTop: 28,
-  },
-  sectionTitle: {
-    color: '#111827',
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  buttonGroup: {},
-  spacer: {
-    height: 10,
-  },
+  safeArea: { backgroundColor: '#FFF8FA', flex: 1, paddingHorizontal: 18, paddingTop: 10 },
+  card: { backgroundColor: '#FFFFFF', borderColor: '#F0C6D4', borderRadius: 14, borderWidth: 1, marginTop: 12, padding: 18 },
+  username: { color: '#1F1126', fontSize: 22, fontWeight: '700' },
+  statsLine: { color: '#6B7280', fontSize: 14, marginTop: 4 },
+  section: { marginTop: 28 },
+  sectionTitle: { color: '#1F1126', fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  spacer: { height: 10 },
 });

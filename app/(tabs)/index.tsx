@@ -27,18 +27,19 @@ export default function IndexScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScreenHeader
-        title="My Trips"
-        subtitle={`${trips.length} trips planned`}
+        title="Hen Planner"
+        subtitle={`${trips.length} hens in the works`}
       />
 
       <PrimaryButton
-        label="+ Add Trip"
+        label="+ Plan a Hen"
         onPress={() => router.push('/add-trip')}
       />
 
       <TextInput
         style={styles.searchBar}
-        placeholder="Search trips..."
+        placeholder="Search by name or destination..."
+        placeholderTextColor="#9CA3AF"
         value={searchText}
         onChangeText={setSearchText}
       />
@@ -49,12 +50,16 @@ export default function IndexScreen() {
       >
         {filteredTrips.length === 0 ? (
           <Text style={styles.emptyText}>
-            {searchText ? 'No trips match your search.' : 'No trips yet. Add one!'}
+            {searchText ? 'No hens match your search.' : 'No hens planned yet. Time to get organising!'}
           </Text>
         ) : null}
 
         {filteredTrips.map((trip) => {
           const tripActivities = activities.filter((a) => a.tripId === trip.id);
+          const totalCost = tripActivities.reduce((sum, a) => sum + a.cost, 0);
+          const perPerson = trip.guestCount > 0 ? Math.round(totalCost / trip.guestCount) : 0;
+          const budgetLeft = trip.budget - totalCost;
+
           return (
             <Pressable
               key={trip.id}
@@ -69,11 +74,23 @@ export default function IndexScreen() {
               <View style={styles.tags}>
                 <InfoTag label="From" value={trip.startDate} />
                 <InfoTag label="To" value={trip.endDate} />
+                <InfoTag label="Guests" value={trip.guestCount.toString()} />
+              </View>
+
+              <View style={styles.costRow}>
+                <Text style={styles.costText}>
+                  Total: €{totalCost} · €{perPerson}/person
+                </Text>
+                {trip.budget > 0 ? (
+                  <Text style={[styles.budgetText, budgetLeft < 0 && styles.overBudget]}>
+                    {budgetLeft >= 0 ? `€${budgetLeft} left` : `€${Math.abs(budgetLeft)} over!`}
+                  </Text>
+                ) : null}
               </View>
 
               <Text style={styles.activityCount}>
                 {tripActivities.length}{' '}
-                {tripActivities.length === 1 ? 'activity' : 'activities'}
+                {tripActivities.length === 1 ? 'activity' : 'activities'} planned
               </Text>
             </Pressable>
           );
@@ -85,14 +102,14 @@ export default function IndexScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF8FA',
     flex: 1,
     paddingHorizontal: 18,
     paddingTop: 10,
   },
   searchBar: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
+    borderColor: '#F0C6D4',
     borderRadius: 10,
     borderWidth: 1,
     fontSize: 15,
@@ -106,14 +123,14 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
+    borderColor: '#F0C6D4',
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 12,
     padding: 14,
   },
   tripName: {
-    color: '#111827',
+    color: '#1F1126',
     fontSize: 18,
     fontWeight: '700',
   },
@@ -127,10 +144,28 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginTop: 10,
   },
-  activityCount: {
-    color: '#6B7280',
+  costRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  costText: {
+    color: '#374151',
     fontSize: 13,
-    marginTop: 8,
+    fontWeight: '600',
+  },
+  budgetText: {
+    color: '#2E9E6B',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  overBudget: {
+    color: '#DC2626',
+  },
+  activityCount: {
+    color: '#9CA3AF',
+    fontSize: 13,
+    marginTop: 6,
   },
   emptyText: {
     color: '#9CA3AF',

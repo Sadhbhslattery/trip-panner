@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync } from 'expo-sqlite';
 
-const sqlite = openDatabaseSync('tripplanner.db');
+const sqlite = openDatabaseSync('henplanner.db');
 
 sqlite.execSync(`
   CREATE TABLE IF NOT EXISTS users (
@@ -19,6 +19,8 @@ sqlite.execSync(`
     destination TEXT NOT NULL,
     start_date TEXT NOT NULL,
     end_date TEXT NOT NULL,
+    guest_count INTEGER NOT NULL DEFAULT 1,
+    budget INTEGER NOT NULL DEFAULT 0,
     notes TEXT
   );
 `);
@@ -41,6 +43,7 @@ sqlite.execSync(`
     name TEXT NOT NULL,
     date TEXT NOT NULL,
     duration INTEGER NOT NULL DEFAULT 0,
+    cost INTEGER NOT NULL DEFAULT 0,
     notes TEXT
   );
 `);

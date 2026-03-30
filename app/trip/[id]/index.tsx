@@ -23,6 +23,10 @@ export default function TripDetail() {
   if (!trip) return null;
 
   const tripActivities = activities.filter((a) => a.tripId === trip.id);
+  const totalCost = tripActivities.reduce((sum, a) => sum + a.cost, 0);
+  const perPerson = trip.guestCount > 0 ? Math.round(totalCost / trip.guestCount) : 0;
+  const budgetLeft = trip.budget - totalCost;
+  const budgetPercent = trip.budget > 0 ? Math.min((totalCost / trip.budget) * 100, 100) : 0;
 
   const getCategoryName = (categoryId: number) => {
     const cat = categories.find((c) => c.id === categoryId);
@@ -42,7 +46,6 @@ export default function TripDetail() {
   const deleteTrip = async () => {
     await db.delete(activitiesTable).where(eq(activitiesTable.tripId, Number(id)));
     await db.delete(tripsTable).where(eq(tripsTable.id, Number(id)));
-
     const tripRows = await db.select().from(tripsTable);
     const activityRows = await db.select().from(activitiesTable);
     setTrips(tripRows);
@@ -64,16 +67,52 @@ export default function TripDetail() {
         <View style={styles.tags}>
           <InfoTag label="From" value={trip.startDate} />
           <InfoTag label="To" value={trip.endDate} />
+          <InfoTag label="Guests" value={trip.guestCount.toString()} />
         </View>
 
         {trip.notes ? (
           <Text style={styles.notes}>{trip.notes}</Text>
         ) : null}
 
+        {/* Budget summary card */}
+        <View style={styles.budgetCard}>
+          <Text style={styles.budgetTitle}>Budget</Text>
+          <View style={styles.budgetRow}>
+            <Text style={styles.budgetLabel}>Total spent</Text>
+            <Text style={styles.budgetValue}>€{totalCost}</Text>
+          </View>
+          <View style={styles.budgetRow}>
+            <Text style={styles.budgetLabel}>Per person ({trip.guestCount} guests)</Text>
+            <Text style={styles.budgetValue}>€{perPerson}</Text>
+          </View>
+          {trip.budget > 0 ? (
+            <>
+              <View style={styles.budgetRow}>
+                <Text style={styles.budgetLabel}>Budget</Text>
+                <Text style={styles.budgetValue}>€{trip.budget}</Text>
+              </View>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${budgetPercent}%`,
+                      backgroundColor: budgetLeft >= 0 ? '#2E9E6B' : '#DC2626',
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={[styles.budgetRemaining, budgetLeft < 0 && styles.overBudget]}>
+                {budgetLeft >= 0 ? `€${budgetLeft} remaining` : `€${Math.abs(budgetLeft)} over budget!`}
+              </Text>
+            </>
+          ) : null}
+        </View>
+
         <View style={styles.buttonRow}>
           <PrimaryButton
             compact
-            label="Edit Trip"
+            label="Edit Hen"
             onPress={() =>
               router.push({ pathname: '/trip/[id]/edit', params: { id } })
             }
@@ -97,7 +136,7 @@ export default function TripDetail() {
         </View>
 
         {tripActivities.length === 0 ? (
-          <Text style={styles.emptyText}>No activities yet. Add one!</Text>
+          <Text style={styles.emptyText}>No activities yet. Start planning!</Text>
         ) : null}
 
         {tripActivities.map((activity) => (
@@ -116,10 +155,21 @@ export default function TripDetail() {
 
             <View style={styles.activityMeta}>
               <Text style={styles.metaText}>{activity.date}</Text>
-              <Text style={styles.metaText}>{activity.duration} min</Text>
+              {activity.duration > 0 ? (
+                <Text style={styles.metaText}>{activity.duration} min</Text>
+              ) : null}
               <Text style={[styles.metaText, { color: getCategoryColour(activity.categoryId) }]}>
                 {getCategoryName(activity.categoryId)}
               </Text>
+            </View>
+
+            <View style={styles.activityCostRow}>
+              <Text style={styles.activityCost}>€{activity.cost}</Text>
+              {trip.guestCount > 0 ? (
+                <Text style={styles.activityPerPerson}>
+                  (€{Math.round(activity.cost / trip.guestCount)}/person)
+                </Text>
+              ) : null}
             </View>
 
             {activity.notes ? (
@@ -145,7 +195,7 @@ export default function TripDetail() {
         ))}
 
         <View style={styles.bottomButtons}>
-          <PrimaryButton label="Delete Trip" variant="danger" onPress={deleteTrip} />
+          <PrimaryButton label="Delete Hen" variant="danger" onPress={deleteTrip} />
           <View style={styles.spacer} />
           <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
         </View>
@@ -156,7 +206,7 @@ export default function TripDetail() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF8FA',
     flex: 1,
     padding: 20,
   },
@@ -169,6 +219,55 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 14,
     marginBottom: 12,
+    fontStyle: 'italic',
+  },
+  budgetCard: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#F0C6D4',
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 14,
+  },
+  budgetTitle: {
+    color: '#1F1126',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  budgetRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  budgetLabel: {
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  budgetValue: {
+    color: '#1F1126',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  progressTrack: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    height: 10,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    borderRadius: 6,
+    height: 10,
+  },
+  budgetRemaining: {
+    color: '#2E9E6B',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  overBudget: {
+    color: '#DC2626',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -181,13 +280,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#111827',
+    color: '#1F1126',
     fontSize: 20,
     fontWeight: '700',
   },
   activityCard: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#E5E7EB',
+    borderColor: '#F0C6D4',
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 10,
@@ -204,9 +303,10 @@ const styles = StyleSheet.create({
     width: 12,
   },
   activityName: {
-    color: '#111827',
+    color: '#1F1126',
     fontSize: 16,
     fontWeight: '600',
+    flex: 1,
   },
   activityMeta: {
     flexDirection: 'row',
@@ -216,6 +316,21 @@ const styles = StyleSheet.create({
   metaText: {
     color: '#6B7280',
     fontSize: 13,
+  },
+  activityCostRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  activityCost: {
+    color: '#1F1126',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  activityPerPerson: {
+    color: '#9CA3AF',
+    fontSize: 12,
   },
   activityNotes: {
     color: '#9CA3AF',
@@ -229,12 +344,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   editLink: {
-    color: '#0F766E',
+    color: '#D4537E',
     fontSize: 13,
     fontWeight: '600',
   },
   deleteLink: {
-    color: '#B91C1C',
+    color: '#DC2626',
     fontSize: 13,
     fontWeight: '600',
   },

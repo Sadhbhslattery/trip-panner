@@ -20,10 +20,7 @@ export default function LoginScreen() {
       return;
     }
 
-    const results = await db
-      .select()
-      .from(usersTable)
-      .where(eq(usersTable.username, username));
+    const results = await db.select().from(usersTable).where(eq(usersTable.username, username));
 
     if (results.length === 0) {
       Alert.alert('Error', 'No account found with that username.');
@@ -41,7 +38,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Log In" subtitle="Welcome back." />
+      <ScreenHeader title="Welcome Back" subtitle="Log in to your hen planner." />
 
       <View style={styles.form}>
         <FormField label="Username" value={username} onChangeText={setUsername} placeholder="Enter your username" />
@@ -51,26 +48,14 @@ export default function LoginScreen() {
       <PrimaryButton label="Log In" onPress={handleLogin} />
 
       <View style={styles.spacer}>
-        <PrimaryButton
-          label="Don't have an account? Register"
-          variant="secondary"
-          onPress={() => router.replace('/register')}
-        />
+        <PrimaryButton label="Don't have an account? Register" variant="secondary" onPress={() => router.replace('/register')} />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#F8FAFC',
-    flex: 1,
-    padding: 20,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  spacer: {
-    marginTop: 10,
-  },
+  safeArea: { backgroundColor: '#FFF8FA', flex: 1, padding: 20 },
+  form: { marginBottom: 6 },
+  spacer: { marginTop: 10 },
 });

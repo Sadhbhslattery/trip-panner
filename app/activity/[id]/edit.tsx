@@ -17,6 +17,7 @@ export default function EditActivity() {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [duration, setDuration] = useState('');
+  const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
@@ -27,6 +28,7 @@ export default function EditActivity() {
     setName(activity.name);
     setDate(activity.date);
     setDuration(activity.duration.toString());
+    setCost(activity.cost.toString());
     setNotes(activity.notes || '');
     setSelectedCategory(activity.categoryId);
   }, [activity]);
@@ -43,6 +45,7 @@ export default function EditActivity() {
         name,
         date,
         duration: Number(duration) || 0,
+        cost: Number(cost) || 0,
         notes: notes || null,
         categoryId: selectedCategory,
       })
@@ -62,6 +65,7 @@ export default function EditActivity() {
           <FormField label="Activity Name" value={name} onChangeText={setName} />
           <FormField label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
           <FormField label="Duration (minutes)" value={duration} onChangeText={setDuration} />
+          <FormField label="Cost (€)" value={cost} onChangeText={setCost} />
           <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} />
         </View>
 
@@ -103,7 +107,7 @@ export default function EditActivity() {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF8FA',
     flex: 1,
     padding: 20,
   },

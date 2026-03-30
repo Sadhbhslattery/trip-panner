@@ -40,14 +40,14 @@ export default function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
-    backgroundColor: '#0F766E',
+    backgroundColor: '#D4537E',
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 11,
   },
   secondary: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#CBD5E1',
+    borderColor: '#F0C6D4',
     borderWidth: 1,
   },
   danger: {
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   secondaryLabel: {
-    color: '#0F172A',
+    color: '#1F1126',
   },
   compactLabel: {
     fontSize: 13,

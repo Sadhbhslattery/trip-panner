@@ -11,6 +11,8 @@ export type Trip = {
   destination: string;
   startDate: string;
   endDate: string;
+  guestCount: number;
+  budget: number;
   notes: string | null;
 };
 
@@ -21,6 +23,7 @@ export type Activity = {
   name: string;
   date: string;
   duration: number;
+  cost: number;
   notes: string | null;
 };
 

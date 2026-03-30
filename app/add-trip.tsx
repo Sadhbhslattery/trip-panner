@@ -5,7 +5,7 @@ import { db } from '@/db/client';
 import { trips as tripsTable } from '@/db/schema';
 import { useRouter } from 'expo-router';
 import { useContext, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from './_layout';
 
@@ -16,6 +16,8 @@ export default function AddTrip() {
   const [destination, setDestination] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [guestCount, setGuestCount] = useState('');
+  const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
 
   if (!context) return null;
@@ -30,6 +32,8 @@ export default function AddTrip() {
       destination,
       startDate,
       endDate,
+      guestCount: Number(guestCount) || 1,
+      budget: Number(budget) || 0,
       notes: notes || null,
     });
 
@@ -40,26 +44,30 @@ export default function AddTrip() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScreenHeader title="Add Trip" subtitle="Plan a new adventure." />
-      <View style={styles.form}>
-        <FormField label="Trip Name" value={name} onChangeText={setName} placeholder="e.g. Lisbon Long Weekend" />
-        <FormField label="Destination" value={destination} onChangeText={setDestination} placeholder="e.g. Lisbon, Portugal" />
-        <FormField label="Start Date" value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
-        <FormField label="End Date" value={endDate} onChangeText={setEndDate} placeholder="YYYY-MM-DD" />
-        <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Any extra details..." />
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <ScreenHeader title="Plan a Hen" subtitle="Let's get this party started." />
+        <View style={styles.form}>
+          <FormField label="Hen Name" value={name} onChangeText={setName} placeholder="e.g. Sarah's Hen - Galway" />
+          <FormField label="Destination" value={destination} onChangeText={setDestination} placeholder="e.g. Galway, Ireland" />
+          <FormField label="Start Date" value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
+          <FormField label="End Date" value={endDate} onChangeText={setEndDate} placeholder="YYYY-MM-DD" />
+          <FormField label="Number of Guests" value={guestCount} onChangeText={setGuestCount} placeholder="e.g. 12" />
+          <FormField label="Total Budget (€)" value={budget} onChangeText={setBudget} placeholder="e.g. 3500 (leave blank for no limit)" />
+          <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Bride's name, theme, surprises, allergies..." />
+        </View>
 
-      <PrimaryButton label="Save Trip" onPress={saveTrip} />
-      <View style={styles.spacer}>
-        <PrimaryButton label="Cancel" variant="secondary" onPress={() => router.back()} />
-      </View>
+        <PrimaryButton label="Create Hen" onPress={saveTrip} />
+        <View style={styles.spacer}>
+          <PrimaryButton label="Cancel" variant="secondary" onPress={() => router.back()} />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFF8FA',
     flex: 1,
     padding: 20,
   },
@@ -68,5 +76,6 @@ const styles = StyleSheet.create({
   },
   spacer: {
     marginTop: 10,
+    paddingBottom: 30,
   },
 });

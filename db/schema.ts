@@ -13,6 +13,8 @@ export const trips = sqliteTable('trips', {
   destination: text('destination').notNull(),
   startDate: text('start_date').notNull(),
   endDate: text('end_date').notNull(),
+  guestCount: integer('guest_count').notNull().default(1),
+  budget: integer('budget').notNull().default(0),
   notes: text('notes'),
 });
 
@@ -31,6 +33,7 @@ export const activities = sqliteTable('activities', {
   name: text('name').notNull(),
   date: text('date').notNull(),
   duration: integer('duration').notNull().default(0),
+  cost: integer('cost').notNull().default(0),
   notes: text('notes'),
 });
 
