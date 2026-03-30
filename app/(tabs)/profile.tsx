@@ -1,0 +1,116 @@
+import PrimaryButton from '@/components/ui/primary-button';
+import ScreenHeader from '@/components/ui/screen-header';
+import { db } from '@/db/client';
+import { activities as activitiesTable, categories as categoriesTable, targets as targetsTable, trips as tripsTable, users as usersTable } from '@/db/schema';
+import { eq } from 'drizzle-orm';
+import { useRouter } from 'expo-router';
+import { useContext } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { TripContext } from '../_layout';
+
+export default function ProfileScreen() {
+  const context = useContext(TripContext);
+  const router = useRouter();
+
+  if (!context) return null;
+  const { trips, activities, setTrips, setActivities, setCategories, setTargets } = context;
+
+  const totalActivities = activities.length;
+  const totalMinutes = activities.reduce((sum, a) => sum + a.duration, 0);
+
+  const handleLogout = () => {
+    router.replace('/login');
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Everything',
+          style: 'destructive',
+          onPress: async () => {
+            await db.delete(activitiesTable);
+            await db.delete(targetsTable);
+            await db.delete(tripsTable);
+            await db.delete(categoriesTable);
+            await db.delete(usersTable).where(eq(usersTable.id, 1));
+
+            setTrips([]);
+            setActivities([]);
+            setCategories([]);
+            setTargets([]);
+
+            router.replace('/register');
+          },
+        },
+      ]
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScreenHeader title="Profile" subtitle="Manage your account" />
+
+      <View style={styles.card}>
+        <Text style={styles.username}>demo</Text>
+        <Text style={styles.statsLine}>
+          {trips.length} trips · {totalActivities} activities · {(totalMinutes / 60).toFixed(1)} hours logged
+        </Text>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+
+        <View style={styles.buttonGroup}>
+          <PrimaryButton label="Log Out" variant="secondary" onPress={handleLogout} />
+          <View style={styles.spacer} />
+          <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} />
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    backgroundColor: '#F8FAFC',
+    flex: 1,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 12,
+    padding: 18,
+  },
+  username: {
+    color: '#111827',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  statsLine: {
+    color: '#6B7280',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  section: {
+    marginTop: 28,
+  },
+  sectionTitle: {
+    color: '#111827',
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  buttonGroup: {},
+  spacer: {
+    height: 10,
+  },
+});
