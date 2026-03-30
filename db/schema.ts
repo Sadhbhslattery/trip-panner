@@ -4,6 +4,7 @@ export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull(),
   password: text('password').notNull(),
+  theme: text('theme').notNull().default('light'),
 });
 
 export const trips = sqliteTable('trips', {

@@ -1,6 +1,7 @@
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
+import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
 import { guests as guestsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,15 +11,17 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../../_layout';
 
-const ATTENDING_OPTIONS = ['full', 'partial', 'unsure', 'no'];
+const OPTS = ['full', 'partial', 'unsure', 'no'];
+const lbl = (s: string) => s === 'full' ? 'Full trip' : s === 'partial' ? 'Part of trip' : s === 'unsure' ? 'Unsure' : "Can't make it";
+const clr = (s: string) => s === 'full' ? ['#DCFCE7', '#166534'] : s === 'partial' ? ['#FEF3C7', '#92400E'] : s === 'no' ? ['#FEE2E2', '#991B1B'] : ['#F3F4F6', '#6B7280'];
 
 export default function GuestsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const context = useContext(TripContext);
-
+  const c = useColors();
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [dietary, setDietary] = useState('');
@@ -27,205 +30,97 @@ export default function GuestsScreen() {
 
   if (!context) return null;
   const { trips, guests, setGuests } = context;
-
   const trip = trips.find((t) => t.id === Number(id));
   if (!trip) return null;
+  const tg = guests.filter((g) => g.tripId === Number(id));
 
-  const tripGuests = guests.filter((g) => g.tripId === Number(id));
-  const confirmedCount = tripGuests.filter((g) => g.attending === 'full').length;
-  const partialCount = tripGuests.filter((g) => g.attending === 'partial').length;
-  const unsureCount = tripGuests.filter((g) => g.attending === 'unsure').length;
+  const reset = () => { setName(''); setPhone(''); setDietary(''); setAttending('full'); setNotes(''); setEditId(null); setShowForm(false); };
 
-  const resetForm = () => {
-    setName('');
-    setPhone('');
-    setDietary('');
-    setAttending('full');
-    setNotes('');
-    setEditingId(null);
-    setShowForm(false);
+  const startEdit = (gid: number) => {
+    const g = tg.find((x) => x.id === gid);
+    if (!g) return;
+    setName(g.name); setPhone(g.phone || ''); setDietary(g.dietary || ''); setAttending(g.attending); setNotes(g.notes || ''); setEditId(gid); setShowForm(true);
   };
 
-  const startEditing = (guestId: number) => {
-    const guest = tripGuests.find((g) => g.id === guestId);
-    if (!guest) return;
-    setName(guest.name);
-    setPhone(guest.phone || '');
-    setDietary(guest.dietary || '');
-    setAttending(guest.attending);
-    setNotes(guest.notes || '');
-    setEditingId(guestId);
-    setShowForm(true);
-  };
-
-  const saveGuest = async () => {
+  const save = async () => {
     if (!name) return;
-
-    if (editingId) {
-      await db.update(guestsTable).set({
-        name, phone: phone || null, dietary: dietary || null, attending, notes: notes || null,
-      }).where(eq(guestsTable.id, editingId));
-    } else {
-      await db.insert(guestsTable).values({
-        tripId: Number(id), name, phone: phone || null, dietary: dietary || null, attending, notes: notes || null,
-      });
-    }
-
-    const rows = await db.select().from(guestsTable);
-    setGuests(rows);
-    resetForm();
+    if (editId) { await db.update(guestsTable).set({ name, phone: phone || null, dietary: dietary || null, attending, notes: notes || null }).where(eq(guestsTable.id, editId)); }
+    else { await db.insert(guestsTable).values({ tripId: Number(id), name, phone: phone || null, dietary: dietary || null, attending, notes: notes || null }); }
+    setGuests(await db.select().from(guestsTable)); reset();
   };
 
-  const deleteGuest = async (guestId: number) => {
-    await db.delete(guestsTable).where(eq(guestsTable.id, guestId));
-    const rows = await db.select().from(guestsTable);
-    setGuests(rows);
-  };
-
-  const getAttendingStyle = (status: string) => {
-    switch (status) {
-      case 'full': return { bg: '#DCFCE7', text: '#166534', label: 'Full trip' };
-      case 'partial': return { bg: '#FEF3C7', text: '#92400E', label: 'Part of trip' };
-      case 'unsure': return { bg: '#F3F4F6', text: '#6B7280', label: 'Unsure' };
-      case 'no': return { bg: '#FEE2E2', text: '#991B1B', label: 'Can\'t make it' };
-      default: return { bg: '#F3F4F6', text: '#6B7280', label: status };
-    }
-  };
+  const del = async (gid: number) => { await db.delete(guestsTable).where(eq(guestsTable.id, gid)); setGuests(await db.select().from(guestsTable)); };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <ScreenHeader title="Guest List" subtitle={`${trip.name}`} />
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryChip}>
-            <Text style={styles.summaryNumber}>{confirmedCount}</Text>
-            <Text style={styles.summaryLabel}>Full</Text>
-          </View>
-          <View style={styles.summaryChip}>
-            <Text style={styles.summaryNumber}>{partialCount}</Text>
-            <Text style={styles.summaryLabel}>Partial</Text>
-          </View>
-          <View style={styles.summaryChip}>
-            <Text style={styles.summaryNumber}>{unsureCount}</Text>
-            <Text style={styles.summaryLabel}>Unsure</Text>
-          </View>
-          <View style={styles.summaryChip}>
-            <Text style={styles.summaryNumber}>{tripGuests.length}</Text>
-            <Text style={styles.summaryLabel}>Total</Text>
-          </View>
+        <ScreenHeader title="Guest List" subtitle={trip.name} />
+        <View style={styles.chips}>
+          {[{ n: tg.filter((g) => g.attending === 'full').length, l: 'Full' }, { n: tg.filter((g) => g.attending === 'partial').length, l: 'Partial' }, { n: tg.filter((g) => g.attending === 'unsure').length, l: 'Unsure' }, { n: tg.length, l: 'Total' }].map((s) => (
+            <View key={s.l} style={[styles.chip, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Text style={{ color: c.text, fontSize: 20, fontWeight: '700' }}>{s.n}</Text>
+              <Text style={{ color: c.textFaint, fontSize: 11, marginTop: 2 }}>{s.l}</Text>
+            </View>
+          ))}
         </View>
 
-        {!showForm ? (
-          <PrimaryButton label="+ Add Guest" onPress={() => setShowForm(true)} />
-        ) : null}
+        {!showForm ? <PrimaryButton label="+ Add Guest" onPress={() => setShowForm(true)} /> : null}
 
         {showForm ? (
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>{editingId ? 'Edit Guest' : 'Add Guest'}</Text>
+          <View style={[styles.form, { backgroundColor: c.card, borderColor: c.border }]}>
+            <Text style={{ color: c.text, fontSize: 17, fontWeight: '700', marginBottom: 10 }}>{editId ? 'Edit Guest' : 'Add Guest'}</Text>
             <FormField label="Name" value={name} onChangeText={setName} placeholder="e.g. Amy" />
             <FormField label="Phone (optional)" value={phone} onChangeText={setPhone} placeholder="e.g. 087 123 4567" />
-            <FormField label="Dietary requirements (optional)" value={dietary} onChangeText={setDietary} placeholder="e.g. Vegetarian, Coeliac" />
-            <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="e.g. Sarah's sister, arriving late" />
-
-            <Text style={styles.attendingLabel}>Attending</Text>
-            <View style={styles.attendingRow}>
-              {ATTENDING_OPTIONS.map((opt) => {
-                const style = getAttendingStyle(opt);
+            <FormField label="Dietary (optional)" value={dietary} onChangeText={setDietary} placeholder="e.g. Vegetarian" />
+            <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="e.g. Arriving late" />
+            <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 8 }}>Attending</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+              {OPTS.map((o) => {
+                const [bg, txt] = clr(o);
                 return (
-                  <Pressable
-                    key={opt}
-                    style={[
-                      styles.attendingChip,
-                      { borderColor: style.text },
-                      attending === opt && { backgroundColor: style.bg },
-                    ]}
-                    onPress={() => setAttending(opt)}
-                  >
-                    <Text style={[styles.attendingChipText, { color: style.text }]}>
-                      {style.label}
-                    </Text>
+                  <Pressable key={o} style={[styles.attChip, { borderColor: txt }, attending === o && { backgroundColor: bg }]} onPress={() => setAttending(o)}>
+                    <Text style={{ color: txt, fontSize: 13, fontWeight: '600' }}>{lbl(o)}</Text>
                   </Pressable>
                 );
               })}
             </View>
-
-            <View style={styles.formButtons}>
-              <PrimaryButton label={editingId ? 'Save Changes' : 'Add Guest'} onPress={saveGuest} />
-              <View style={styles.spacer}>
-                <PrimaryButton label="Cancel" variant="secondary" onPress={resetForm} />
-              </View>
-            </View>
+            <PrimaryButton label={editId ? 'Save Changes' : 'Add Guest'} onPress={save} />
+            <View style={{ marginTop: 10 }}><PrimaryButton label="Cancel" variant="secondary" onPress={reset} /></View>
           </View>
         ) : null}
 
-        <View style={styles.listSection}>
-          {tripGuests.length === 0 ? (
-            <Text style={styles.emptyText}>No guests added yet.</Text>
-          ) : null}
-
-          {tripGuests.map((guest) => {
-            const style = getAttendingStyle(guest.attending);
-            return (
-              <View key={guest.id} style={styles.guestCard}>
-                <View style={styles.guestTop}>
-                  <Text style={styles.guestName}>{guest.name}</Text>
-                  <View style={[styles.statusBadge, { backgroundColor: style.bg }]}>
-                    <Text style={[styles.statusText, { color: style.text }]}>{style.label}</Text>
-                  </View>
-                </View>
-
-                {guest.phone ? <Text style={styles.guestDetail}>📱 {guest.phone}</Text> : null}
-                {guest.dietary ? <Text style={styles.guestDietary}>⚠️ {guest.dietary}</Text> : null}
-                {guest.notes ? <Text style={styles.guestNotes}>{guest.notes}</Text> : null}
-
-                <View style={styles.guestActions}>
-                  <Pressable onPress={() => startEditing(guest.id)}>
-                    <Text style={styles.editLink}>Edit</Text>
-                  </Pressable>
-                  <Pressable onPress={() => deleteGuest(guest.id)}>
-                    <Text style={styles.deleteLink}>Remove</Text>
-                  </Pressable>
+        {tg.map((g) => {
+          const [bg, txt] = clr(g.attending);
+          return (
+            <View key={g.id} style={[styles.gCard, { backgroundColor: c.card, borderColor: c.border }]}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: c.text, fontSize: 16, fontWeight: '600' }}>{g.name}</Text>
+                <View style={{ backgroundColor: bg, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+                  <Text style={{ color: txt, fontSize: 11, fontWeight: '700' }}>{lbl(g.attending)}</Text>
                 </View>
               </View>
-            );
-          })}
-        </View>
+              {g.phone ? <Text style={{ color: c.textSoft, fontSize: 13, marginTop: 6 }}>📱 {g.phone}</Text> : null}
+              {g.dietary ? <Text style={{ color: '#D97706', fontSize: 13, fontWeight: '600', marginTop: 4 }}>⚠️ {g.dietary}</Text> : null}
+              {g.notes ? <Text style={{ color: c.textFaint, fontSize: 13, fontStyle: 'italic', marginTop: 4 }}>{g.notes}</Text> : null}
+              <View style={{ flexDirection: 'row', gap: 16, marginTop: 10 }}>
+                <Pressable onPress={() => startEdit(g.id)}><Text style={{ color: c.accent, fontSize: 13, fontWeight: '600' }}>Edit</Text></Pressable>
+                <Pressable onPress={() => del(g.id)}><Text style={{ color: c.danger, fontSize: 13, fontWeight: '600' }}>Remove</Text></Pressable>
+              </View>
+            </View>
+          );
+        })}
 
-        <View style={styles.bottomButton}>
-          <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
-        </View>
+        <View style={{ marginTop: 20, paddingBottom: 30 }}><PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} /></View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: '#FFF8FA', flex: 1, padding: 20 },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  summaryChip: { alignItems: 'center', backgroundColor: '#FFFFFF', borderColor: '#F0C6D4', borderRadius: 10, borderWidth: 1, flex: 1, paddingVertical: 10 },
-  summaryNumber: { color: '#1F1126', fontSize: 20, fontWeight: '700' },
-  summaryLabel: { color: '#9CA3AF', fontSize: 11, marginTop: 2 },
-  formCard: { backgroundColor: '#FFFFFF', borderColor: '#F0C6D4', borderRadius: 14, borderWidth: 1, marginTop: 12, marginBottom: 16, padding: 14 },
-  formTitle: { color: '#1F1126', fontSize: 17, fontWeight: '700', marginBottom: 10 },
-  attendingLabel: { color: '#334155', fontSize: 13, fontWeight: '600', marginBottom: 8, marginTop: 4 },
-  attendingRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  attendingChip: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 7 },
-  attendingChipText: { fontSize: 13, fontWeight: '600' },
-  formButtons: { marginTop: 8 },
-  spacer: { marginTop: 10 },
-  listSection: { marginTop: 8 },
-  guestCard: { backgroundColor: '#FFFFFF', borderColor: '#F0C6D4', borderRadius: 12, borderWidth: 1, marginBottom: 10, padding: 14 },
-  guestTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  guestName: { color: '#1F1126', fontSize: 16, fontWeight: '600' },
-  statusBadge: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  guestDetail: { color: '#6B7280', fontSize: 13, marginTop: 6 },
-  guestDietary: { color: '#D97706', fontSize: 13, fontWeight: '600', marginTop: 4 },
-  guestNotes: { color: '#9CA3AF', fontSize: 13, fontStyle: 'italic', marginTop: 4 },
-  guestActions: { flexDirection: 'row', gap: 16, marginTop: 10 },
-  editLink: { color: '#D4537E', fontSize: 13, fontWeight: '600' },
-  deleteLink: { color: '#DC2626', fontSize: 13, fontWeight: '600' },
-  emptyText: { color: '#9CA3AF', fontSize: 14, textAlign: 'center', marginTop: 20 },
-  bottomButton: { marginTop: 20, paddingBottom: 30 },
+  safe: { flex: 1, padding: 20 },
+  chips: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  chip: { alignItems: 'center', borderRadius: 10, borderWidth: 1, flex: 1, paddingVertical: 10 },
+  form: { borderRadius: 14, borderWidth: 1, marginTop: 12, marginBottom: 16, padding: 14 },
+  attChip: { borderRadius: 20, borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 7 },
+  gCard: { borderRadius: 12, borderWidth: 1, marginBottom: 10, padding: 14 },
 });

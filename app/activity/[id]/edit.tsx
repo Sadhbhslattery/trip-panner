@@ -1,146 +1,61 @@
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
+import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
-import { activities as activitiesTable } from '@/db/schema';
+import { trips as tripsTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useContext, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../../_layout';
 
-export default function EditActivity() {
+export default function EditTrip() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const context = useContext(TripContext);
+  const c = useColors();
   const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [duration, setDuration] = useState('');
-  const [cost, setCost] = useState('');
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [guestCount, setGuestCount] = useState('');
+  const [budget, setBudget] = useState('');
   const [notes, setNotes] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
-  const activity = context?.activities.find((a) => a.id === Number(id));
-
+  const trip = context?.trips.find((t) => t.id === Number(id));
   useEffect(() => {
-    if (!activity) return;
-    setName(activity.name);
-    setDate(activity.date);
-    setDuration(activity.duration.toString());
-    setCost(activity.cost.toString());
-    setNotes(activity.notes || '');
-    setSelectedCategory(activity.categoryId);
-  }, [activity]);
+    if (!trip) return;
+    setName(trip.name); setDestination(trip.destination); setStartDate(trip.startDate);
+    setEndDate(trip.endDate); setGuestCount(trip.guestCount.toString()); setBudget(trip.budget.toString()); setNotes(trip.notes || '');
+  }, [trip]);
 
-  if (!context || !activity) return null;
-  const { categories, setActivities } = context;
+  if (!context || !trip) return null;
+  const { setTrips } = context;
 
-  const saveChanges = async () => {
-    if (!name || !date || !selectedCategory) return;
-
-    await db
-      .update(activitiesTable)
-      .set({
-        name,
-        date,
-        duration: Number(duration) || 0,
-        cost: Number(cost) || 0,
-        notes: notes || null,
-        categoryId: selectedCategory,
-      })
-      .where(eq(activitiesTable.id, Number(id)));
-
-    const rows = await db.select().from(activitiesTable);
-    setActivities(rows);
+  const save = async () => {
+    await db.update(tripsTable).set({ name, destination, startDate, endDate, guestCount: Number(guestCount) || 1, budget: Number(budget) || 0, notes: notes || null }).where(eq(tripsTable.id, Number(id)));
+    setTrips(await db.select().from(tripsTable));
     router.back();
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={{ backgroundColor: c.bg, flex: 1, padding: 20 }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <ScreenHeader title="Edit Activity" subtitle={`Update ${activity.name}`} />
-
-        <View style={styles.form}>
-          <FormField label="Activity Name" value={name} onChangeText={setName} />
-          <FormField label="Date" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" />
-          <FormField label="Duration (minutes)" value={duration} onChangeText={setDuration} />
-          <FormField label="Cost (€)" value={cost} onChangeText={setCost} />
-          <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} />
-        </View>
-
-        <Text style={styles.categoryLabel}>Category</Text>
-        <View style={styles.categoryList}>
-          {categories.map((cat) => (
-            <Pressable
-              key={cat.id}
-              style={[
-                styles.categoryChip,
-                { borderColor: cat.colour },
-                selectedCategory === cat.id && { backgroundColor: cat.colour },
-              ]}
-              onPress={() => setSelectedCategory(cat.id)}
-            >
-              <Text
-                style={[
-                  styles.categoryChipText,
-                  { color: cat.colour },
-                  selectedCategory === cat.id && { color: '#FFFFFF' },
-                ]}
-              >
-                {cat.icon} {cat.name}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <View style={styles.buttons}>
-          <PrimaryButton label="Save Changes" onPress={saveChanges} />
-          <View style={styles.spacer}>
-            <PrimaryButton label="Cancel" variant="secondary" onPress={() => router.back()} />
-          </View>
+        <ScreenHeader title="Edit Hen" subtitle={`Update ${trip.name}`} />
+        <FormField label="Hen Name" value={name} onChangeText={setName} />
+        <FormField label="Destination" value={destination} onChangeText={setDestination} />
+        <FormField label="Start Date" value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
+        <FormField label="End Date" value={endDate} onChangeText={setEndDate} placeholder="YYYY-MM-DD" />
+        <FormField label="Number of Guests" value={guestCount} onChangeText={setGuestCount} />
+        <FormField label="Total Budget (€)" value={budget} onChangeText={setBudget} />
+        <FormField label="Notes (optional)" value={notes} onChangeText={setNotes} />
+        <View style={{ marginTop: 6 }}>
+          <PrimaryButton label="Save Changes" onPress={save} />
+          <View style={{ marginTop: 10 }}><PrimaryButton label="Cancel" variant="secondary" onPress={() => router.back()} /></View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#FFF8FA',
-    flex: 1,
-    padding: 20,
-  },
-  form: {
-    marginBottom: 6,
-  },
-  categoryLabel: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  categoryList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  categoryChip: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-  },
-  categoryChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  buttons: {
-    marginTop: 8,
-    paddingBottom: 30,
-  },
-  spacer: {
-    marginTop: 10,
-  },
-});
