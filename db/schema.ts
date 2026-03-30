@@ -44,3 +44,13 @@ export const targets = sqliteTable('targets', {
   targetType: text('target_type').notNull(),
   targetValue: integer('target_value').notNull(),
 });
+
+export const guests = sqliteTable('guests', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  tripId: integer('trip_id').notNull(),
+  name: text('name').notNull(),
+  phone: text('phone'),
+  dietary: text('dietary'),
+  attending: text('attending').notNull().default('full'),
+  notes: text('notes'),
+});

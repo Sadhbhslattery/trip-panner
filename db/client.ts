@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync } from 'expo-sqlite';
 
-const sqlite = openDatabaseSync('henplanner.db');
+const sqlite = openDatabaseSync('henplanner2.db');
 
 sqlite.execSync(`
   CREATE TABLE IF NOT EXISTS users (
@@ -55,6 +55,18 @@ sqlite.execSync(`
     category_id INTEGER,
     target_type TEXT NOT NULL,
     target_value INTEGER NOT NULL
+  );
+`);
+
+sqlite.execSync(`
+  CREATE TABLE IF NOT EXISTS guests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trip_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    phone TEXT,
+    dietary TEXT,
+    attending TEXT NOT NULL DEFAULT 'full',
+    notes TEXT
   );
 `);
 

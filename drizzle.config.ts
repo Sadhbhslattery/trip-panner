@@ -1,10 +1,10 @@
 import type { Config } from 'drizzle-kit';
-
+ 
 export default {
   schema: './db/schema.ts',
   out: './drizzle',
   dialect: 'sqlite',
   dbCredentials: {
-    url: './henplanner.db',
+    url: './henplanner2.db',
   },
 } satisfies Config;

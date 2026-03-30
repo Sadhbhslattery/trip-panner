@@ -1,7 +1,7 @@
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
 import { db } from '@/db/client';
-import { activities as activitiesTable, categories as categoriesTable, targets as targetsTable, trips as tripsTable, users as usersTable } from '@/db/schema';
+import { activities as activitiesTable, categories as categoriesTable, guests as guestsTable, targets as targetsTable, trips as tripsTable, users as usersTable } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 import { useContext } from 'react';
@@ -14,9 +14,10 @@ export default function ProfileScreen() {
   const router = useRouter();
 
   if (!context) return null;
-  const { trips, activities, setTrips, setActivities, setCategories, setTargets } = context;
+  const { trips, activities, guests, setTrips, setActivities, setCategories, setTargets, setGuests } = context;
 
   const totalCost = activities.reduce((sum, a) => sum + a.cost, 0);
+  const totalGuests = guests.length;
 
   const handleLogout = () => {
     router.replace('/login');
@@ -32,6 +33,7 @@ export default function ProfileScreen() {
           text: 'Delete Everything',
           style: 'destructive',
           onPress: async () => {
+            await db.delete(guestsTable);
             await db.delete(activitiesTable);
             await db.delete(targetsTable);
             await db.delete(tripsTable);
@@ -41,6 +43,7 @@ export default function ProfileScreen() {
             setActivities([]);
             setCategories([]);
             setTargets([]);
+            setGuests([]);
             router.replace('/register');
           },
         },
@@ -55,7 +58,7 @@ export default function ProfileScreen() {
       <View style={styles.card}>
         <Text style={styles.username}>demo</Text>
         <Text style={styles.statsLine}>
-          {trips.length} hens · {activities.length} activities · €{totalCost} total spend
+          {trips.length} hens · {activities.length} activities · {totalGuests} guests · €{totalCost} total
         </Text>
       </View>
 

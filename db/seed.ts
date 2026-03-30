@@ -1,5 +1,5 @@
 import { db } from './client';
-import { users, trips, categories, activities, targets } from './schema';
+import { users, trips, categories, activities, targets, guests } from './schema';
 
 export async function seedIfEmpty() {
   const existingUsers = await db.select().from(users);
@@ -9,7 +9,6 @@ export async function seedIfEmpty() {
     { id: 1, username: 'demo', password: 'password123' },
   ]);
 
-  // Hen party categories
   await db.insert(categories).values([
     { id: 1, userId: 1, name: 'Drinks', colour: '#D4537E', icon: '🍹' },
     { id: 2, userId: 1, name: 'Pampering', colour: '#C084FC', icon: '💅' },
@@ -21,20 +20,15 @@ export async function seedIfEmpty() {
     { id: 8, userId: 1, name: 'Accommodation', colour: '#0EA5E9', icon: '🏨' },
   ]);
 
-  // Hen 1: Galway weekend
-  await db.insert(trips).values([
-    {
-      id: 1,
-      userId: 1,
-      name: 'Sarah\'s Hen - Galway',
-      destination: 'Galway, Ireland',
-      startDate: '2025-07-18',
-      endDate: '2025-07-20',
-      guestCount: 12,
-      budget: 3500,
-      notes: 'Bride: Sarah. Theme: pink & gold. Sarah doesn\'t know about the life drawing class - keep it a surprise!',
-    },
-  ]);
+  // ---- Hen 1: Galway ----
+  await db.insert(trips).values([{
+    id: 1, userId: 1,
+    name: 'Sarah\'s Hen - Galway',
+    destination: 'Galway, Ireland',
+    startDate: '2025-07-18', endDate: '2025-07-20',
+    guestCount: 12, budget: 3500,
+    notes: 'Bride: Sarah. Theme: pink & gold. Sarah doesn\'t know about the life drawing class - keep it a surprise!',
+  }]);
 
   await db.insert(activities).values([
     { tripId: 1, categoryId: 8, name: 'Airbnb - Salthill house', date: '2025-07-18', duration: 0, cost: 850, notes: '4 bed house, fits everyone if we double up' },
@@ -51,60 +45,83 @@ export async function seedIfEmpty() {
     { tripId: 1, categoryId: 3, name: 'Brunch before heading home', date: '2025-07-20', duration: 90, cost: 240, notes: 'Ard Bia at Nimmos, 11am' },
   ]);
 
-  // Hen 2: Killarney
-  await db.insert(trips).values([
-    {
-      id: 2,
-      userId: 1,
-      name: 'Aoife\'s Hen - Killarney',
-      destination: 'Killarney, Kerry',
-      startDate: '2025-08-22',
-      endDate: '2025-08-24',
-      guestCount: 8,
-      budget: 2000,
-      notes: 'Bride: Aoife. Smaller group, she wants something chilled. No L-plates - she was very clear about that!',
-    },
+  await db.insert(guests).values([
+    { tripId: 1, name: 'Sarah (bride)', phone: '087 123 4567', dietary: null, attending: 'full', notes: 'The woman of the hour' },
+    { tripId: 1, name: 'Ciara (MOH)', phone: '087 234 5678', dietary: null, attending: 'full', notes: 'Organising everything' },
+    { tripId: 1, name: 'Amy', phone: '086 345 6789', dietary: 'Vegetarian', attending: 'full', notes: 'Has the games props' },
+    { tripId: 1, name: 'Roisin', phone: '085 456 7890', dietary: null, attending: 'full', notes: null },
+    { tripId: 1, name: 'Niamh', phone: '083 567 8901', dietary: 'Coeliac', attending: 'full', notes: 'Check restaurant can do GF' },
+    { tripId: 1, name: 'Orla', phone: '087 678 9012', dietary: null, attending: 'partial', notes: 'Arriving Saturday morning - can\'t get Friday off' },
+    { tripId: 1, name: 'Saoirse', phone: '086 789 0123', dietary: null, attending: 'full', notes: null },
+    { tripId: 1, name: 'Aoife B', phone: '085 890 1234', dietary: null, attending: 'full', notes: null },
+    { tripId: 1, name: 'Caoimhe', phone: '083 901 2345', dietary: 'Vegan', attending: 'full', notes: null },
+    { tripId: 1, name: 'Eimear', phone: '087 012 3456', dietary: null, attending: 'unsure', notes: 'Waiting to hear back' },
+    { tripId: 1, name: 'Sinead', phone: '086 123 4567', dietary: null, attending: 'full', notes: null },
+    { tripId: 1, name: 'Deirdre', phone: '085 234 5678', dietary: null, attending: 'full', notes: 'Sarah\'s sister' },
   ]);
+
+  // ---- Hen 2: Killarney ----
+  await db.insert(trips).values([{
+    id: 2, userId: 1,
+    name: 'Aoife\'s Hen - Killarney',
+    destination: 'Killarney, Kerry',
+    startDate: '2025-08-22', endDate: '2025-08-24',
+    guestCount: 8, budget: 2000,
+    notes: 'Bride: Aoife. Smaller group, she wants something chilled. No L-plates!',
+  }]);
 
   await db.insert(activities).values([
     { tripId: 2, categoryId: 8, name: 'The Brehon Hotel - 2 rooms', date: '2025-08-22', duration: 0, cost: 520, notes: '2 nights, 4 per room' },
-    { tripId: 2, categoryId: 2, name: 'Spa afternoon at the Brehon', date: '2025-08-22', duration: 180, cost: 640, notes: 'Vitality pool, treatments, robes - the works' },
-    { tripId: 2, categoryId: 3, name: 'Dinner at Bricin', date: '2025-08-22', duration: 120, cost: 320, notes: 'Known for their boxty, book early' },
-    { tripId: 2, categoryId: 1, name: 'Drinks at Courtney\'s Bar', date: '2025-08-22', duration: 120, cost: 0, notes: 'No booking needed, lovely little spot' },
-    { tripId: 2, categoryId: 6, name: 'Jaunting car tour through the park', date: '2025-08-23', duration: 90, cost: 240, notes: '2 jaunting cars, pick up outside hotel' },
-    { tripId: 2, categoryId: 6, name: 'Boat trip to Innisfallen Island', date: '2025-08-23', duration: 120, cost: 160, notes: 'Book through hotel concierge' },
+    { tripId: 2, categoryId: 2, name: 'Spa afternoon at the Brehon', date: '2025-08-22', duration: 180, cost: 640, notes: 'Vitality pool, treatments, robes' },
+    { tripId: 2, categoryId: 3, name: 'Dinner at Bricin', date: '2025-08-22', duration: 120, cost: 320, notes: 'Known for their boxty' },
+    { tripId: 2, categoryId: 1, name: 'Drinks at Courtney\'s Bar', date: '2025-08-22', duration: 120, cost: 0, notes: null },
+    { tripId: 2, categoryId: 6, name: 'Jaunting car tour', date: '2025-08-23', duration: 90, cost: 240, notes: '2 jaunting cars' },
+    { tripId: 2, categoryId: 6, name: 'Boat trip to Innisfallen Island', date: '2025-08-23', duration: 120, cost: 160, notes: null },
     { tripId: 2, categoryId: 3, name: 'Lunch at The Laurels', date: '2025-08-23', duration: 90, cost: 200, notes: null },
-    { tripId: 2, categoryId: 4, name: 'Wine & cheese night at hotel', date: '2025-08-23', duration: 120, cost: 120, notes: 'Bring the games, hotel provides the cheese board' },
+    { tripId: 2, categoryId: 4, name: 'Wine & cheese night', date: '2025-08-23', duration: 120, cost: 120, notes: 'Hotel provides the cheese board' },
   ]);
 
-  // Hen 3: future one being planned
-  await db.insert(trips).values([
-    {
-      id: 3,
-      userId: 1,
-      name: 'Emma\'s Hen - Lisbon',
-      destination: 'Lisbon, Portugal',
-      startDate: '2025-09-12',
-      endDate: '2025-09-15',
-      guestCount: 14,
-      budget: 5000,
-      notes: 'Bride: Emma. Big group, mix of Irish and UK girls. Some only coming for 2 of the 3 nights. Need to figure out cost split.',
-    },
+  await db.insert(guests).values([
+    { tripId: 2, name: 'Aoife (bride)', phone: '087 111 2222', dietary: null, attending: 'full', notes: null },
+    { tripId: 2, name: 'Laura (MOH)', phone: '086 222 3333', dietary: null, attending: 'full', notes: 'Organising' },
+    { tripId: 2, name: 'Kate', phone: '085 333 4444', dietary: 'Vegetarian', attending: 'full', notes: null },
+    { tripId: 2, name: 'Rachel', phone: '083 444 5555', dietary: null, attending: 'full', notes: null },
+    { tripId: 2, name: 'Sophie', phone: '087 555 6666', dietary: null, attending: 'full', notes: null },
+    { tripId: 2, name: 'Ciara', phone: '086 666 7777', dietary: null, attending: 'full', notes: null },
+    { tripId: 2, name: 'Lisa', phone: '085 777 8888', dietary: 'Dairy free', attending: 'full', notes: null },
+    { tripId: 2, name: 'Jen', phone: '083 888 9999', dietary: null, attending: 'unsure', notes: 'Has a wedding that weekend - checking dates' },
   ]);
+
+  // ---- Hen 3: Lisbon ----
+  await db.insert(trips).values([{
+    id: 3, userId: 1,
+    name: 'Emma\'s Hen - Lisbon',
+    destination: 'Lisbon, Portugal',
+    startDate: '2025-09-12', endDate: '2025-09-15',
+    guestCount: 14, budget: 5000,
+    notes: 'Bride: Emma. Big group, mix of Irish and UK girls. Some only coming for 2 of 3 nights.',
+  }]);
 
   await db.insert(activities).values([
-    { tripId: 3, categoryId: 8, name: 'Airbnb apartment in Bairro Alto', date: '2025-09-12', duration: 0, cost: 1200, notes: 'Big apartment, sleeps 14 across 5 rooms' },
-    { tripId: 3, categoryId: 6, name: 'Tile painting workshop', date: '2025-09-12', duration: 120, cost: 350, notes: 'Everyone makes their own azulejo tile' },
-    { tripId: 3, categoryId: 3, name: 'Group dinner at Cervejaria Ramiro', date: '2025-09-12', duration: 120, cost: 560, notes: 'Seafood, the prawns are unreal' },
+    { tripId: 3, categoryId: 8, name: 'Airbnb in Bairro Alto', date: '2025-09-12', duration: 0, cost: 1200, notes: 'Sleeps 14 across 5 rooms' },
+    { tripId: 3, categoryId: 6, name: 'Tile painting workshop', date: '2025-09-12', duration: 120, cost: 350, notes: 'Everyone makes their own azulejo' },
+    { tripId: 3, categoryId: 3, name: 'Dinner at Cervejaria Ramiro', date: '2025-09-12', duration: 120, cost: 560, notes: 'Seafood, the prawns are unreal' },
     { tripId: 3, categoryId: 5, name: 'Bar crawl in Bairro Alto', date: '2025-09-12', duration: 180, cost: 0, notes: 'No plan needed, just wander' },
-    { tripId: 3, categoryId: 6, name: 'Beach day at Cascais', date: '2025-09-13', duration: 300, cost: 50, notes: 'Train from Cais do Sodre, 40 min each way' },
-    { tripId: 3, categoryId: 1, name: 'Rooftop bar sunset drinks', date: '2025-09-13', duration: 120, cost: 0, notes: 'Park Bar or TOPO - get there early for seats' },
-    { tripId: 3, categoryId: 2, name: 'Group massage at the apartment', date: '2025-09-14', duration: 120, cost: 700, notes: 'Mobile masseuse, 2 therapists for 14 people' },
+    { tripId: 3, categoryId: 6, name: 'Beach day at Cascais', date: '2025-09-13', duration: 300, cost: 50, notes: 'Train from Cais do Sodre' },
+    { tripId: 3, categoryId: 1, name: 'Rooftop bar sunset drinks', date: '2025-09-13', duration: 120, cost: 0, notes: 'Park Bar or TOPO' },
+    { tripId: 3, categoryId: 2, name: 'Group massage at apartment', date: '2025-09-14', duration: 120, cost: 700, notes: 'Mobile masseuse, 2 therapists' },
     { tripId: 3, categoryId: 1, name: 'Wine tasting', date: '2025-09-14', duration: 90, cost: 420, notes: 'Portuguese wines, Alfama area' },
     { tripId: 3, categoryId: 3, name: 'Last supper - Time Out Market', date: '2025-09-14', duration: 120, cost: 350, notes: 'Everyone picks their own stall' },
   ]);
 
-  // Targets
+  await db.insert(guests).values([
+    { tripId: 3, name: 'Emma (bride)', phone: null, dietary: null, attending: 'full', notes: null },
+    { tripId: 3, name: 'Hannah (MOH)', phone: null, dietary: null, attending: 'full', notes: 'Organising from London' },
+    { tripId: 3, name: 'Meg', phone: null, dietary: null, attending: 'full', notes: 'Flying from Dublin' },
+    { tripId: 3, name: 'Claire', phone: null, dietary: 'Pescatarian', attending: 'partial', notes: 'Only Fri-Sat' },
+    { tripId: 3, name: 'Beth', phone: null, dietary: null, attending: 'full', notes: 'Flying from Manchester' },
+  ]);
+
   await db.insert(targets).values([
     { userId: 1, categoryId: 3, targetType: 'weekly', targetValue: 3 },
     { userId: 1, categoryId: 6, targetType: 'weekly', targetValue: 2 },
