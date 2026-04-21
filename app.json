@@ -51,6 +51,12 @@
         "projectId": "39d9611d-6f39-409b-832f-de042360e223"
       }
     },
-    "owner": "sslattery"
+    "owner": "sslattery",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/39d9611d-6f39-409b-832f-de042360e223"
+    }
   }
 }
