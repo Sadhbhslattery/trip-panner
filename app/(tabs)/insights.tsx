@@ -1,7 +1,12 @@
+import FormField from '@/components/ui/form-field';
+import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
+import { db } from '@/db/client';
+import { targets as targetsTable } from '@/db/schema';
 import { useColors } from '@/hooks/useColors';
+import { eq } from 'drizzle-orm';
 import { useContext, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../_layout';
 
@@ -11,9 +16,14 @@ export default function InsightsScreen() {
   const context = useContext(TripContext);
   const c = useColors();
   const [mode, setMode] = useState<Mode>('spending');
+  const [showForm, setShowForm] = useState(false);
+  const [scope, setScope] = useState<'global' | 'category'>('global');
+  const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
+  const [targetType, setTargetType] = useState<'weekly' | 'monthly'>('weekly');
+  const [targetValue, setTargetValue] = useState('');
 
   if (!context) return null;
-  const { trips, activities, categories, targets } = context;
+  const { trips, activities, categories, targets, setTargets } = context;
 
   const totalAll = activities.reduce((s, a) => s + a.cost, 0);
 
@@ -41,6 +51,48 @@ export default function InsightsScreen() {
     return { id: t.id, label: `${catName} (${t.targetType})`, cur: rel.length, goal: t.targetValue, met: rel.length >= t.targetValue };
   });
 
+  const resetForm = () => {
+    setScope('global');
+    setSelectedCatId(null);
+    setTargetType('weekly');
+    setTargetValue('');
+    setShowForm(false);
+  };
+
+  const saveTarget = async () => {
+    const val = parseInt(targetValue, 10);
+    if (!val || val <= 0) {
+      Alert.alert('Invalid target', 'Please enter a number greater than 0.');
+      return;
+    }
+    if (scope === 'category' && !selectedCatId) {
+      Alert.alert('Pick a category', 'Please select a category or switch to Global.');
+      return;
+    }
+    await db.insert(targetsTable).values({
+      userId: 1,
+      categoryId: scope === 'category' ? selectedCatId : null,
+      targetType,
+      targetValue: val,
+    });
+    setTargets(await db.select().from(targetsTable));
+    resetForm();
+  };
+
+  const deleteTarget = (id: number) => {
+    Alert.alert('Delete Target', 'Are you sure you want to remove this target?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          await db.delete(targetsTable).where(eq(targetsTable.id, id));
+          setTargets(await db.select().from(targetsTable));
+        },
+      },
+    ]);
+  };
+
   const tabs: { key: Mode; label: string }[] = [
     { key: 'spending', label: 'Spending' }, { key: 'time', label: 'Time' },
     { key: 'hens', label: 'By Hen' }, { key: 'targets', label: 'Targets' },
@@ -52,6 +104,9 @@ export default function InsightsScreen() {
       <View style={styles.tabRow}>
         {tabs.map((t) => (
           <Pressable key={t.key}
+            accessibilityRole="tab"
+            accessibilityLabel={`${t.label} tab`}
+            accessibilityState={{ selected: mode === t.key }}
             style={[styles.tab, { backgroundColor: c.card, borderColor: c.border }, mode === t.key && { backgroundColor: c.accent, borderColor: c.accent }]}
             onPress={() => setMode(t.key)}>
             <Text style={[{ color: c.textSoft, fontSize: 13, fontWeight: '600' }, mode === t.key && { color: '#FFF' }]}>{t.label}</Text>
@@ -95,18 +150,116 @@ export default function InsightsScreen() {
             ) : null}
           </View>
         )) : null}
-        {mode === 'targets' ? tgts.map((t) => (
-          <View key={t.id} style={[styles.henCard, { backgroundColor: c.card, borderColor: c.border }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{t.label}</Text>
-              <Text style={{ color: t.met ? c.success : '#D4853A', fontSize: 13, fontWeight: '700' }}>{t.met ? 'Done!' : `${t.goal - t.cur} to go`}</Text>
-            </View>
-            <View style={[styles.progTrack, { backgroundColor: c.trackBg }]}>
-              <View style={[styles.progFill, { width: `${Math.min((t.cur / t.goal) * 100, 100)}%`, backgroundColor: t.met ? c.success : c.accent }]} />
-            </View>
-            <Text style={{ color: c.textFaint, fontSize: 12, marginTop: 4 }}>{t.cur} / {t.goal}</Text>
-          </View>
-        )) : null}
+
+        {mode === 'targets' ? (
+          <>
+            {!showForm ? (
+              <View style={{ marginBottom: 12 }}>
+                <PrimaryButton label="+ Add Target" onPress={() => setShowForm(true)} />
+              </View>
+            ) : null}
+
+            {showForm ? (
+              <View style={[styles.form, { backgroundColor: c.card, borderColor: c.border }]}>
+                <Text style={[styles.formTitle, { color: c.text }]}>New Target</Text>
+
+                <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 6 }}>Scope</Text>
+                <View style={styles.choiceRow}>
+                  <Pressable
+                    style={[styles.choice, { backgroundColor: c.card, borderColor: c.border }, scope === 'global' && { backgroundColor: c.accent, borderColor: c.accent }]}
+                    onPress={() => { setScope('global'); setSelectedCatId(null); }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Global target">
+                    <Text style={[{ color: c.text, fontSize: 13, fontWeight: '600' }, scope === 'global' && { color: '#FFF' }]}>Global (all activities)</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.choice, { backgroundColor: c.card, borderColor: c.border }, scope === 'category' && { backgroundColor: c.accent, borderColor: c.accent }]}
+                    onPress={() => setScope('category')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Per-category target">
+                    <Text style={[{ color: c.text, fontSize: 13, fontWeight: '600' }, scope === 'category' && { color: '#FFF' }]}>Per Category</Text>
+                  </Pressable>
+                </View>
+
+                {scope === 'category' ? (
+                  <>
+                    <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 6 }}>Category</Text>
+                    <View style={styles.choiceRow}>
+                      {categories.map((cat) => (
+                        <Pressable key={cat.id}
+                          style={[styles.chip, { backgroundColor: c.card, borderColor: c.border }, selectedCatId === cat.id && { backgroundColor: cat.colour, borderColor: cat.colour }]}
+                          onPress={() => setSelectedCatId(cat.id)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${cat.name} category`}>
+                          <Text style={[{ color: c.text, fontSize: 12, fontWeight: '600' }, selectedCatId === cat.id && { color: '#FFF' }]}>{cat.icon} {cat.name}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </>
+                ) : null}
+
+                <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 6 }}>Timeframe</Text>
+                <View style={styles.choiceRow}>
+                  <Pressable
+                    style={[styles.choice, { backgroundColor: c.card, borderColor: c.border }, targetType === 'weekly' && { backgroundColor: c.accent, borderColor: c.accent }]}
+                    onPress={() => setTargetType('weekly')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Weekly target">
+                    <Text style={[{ color: c.text, fontSize: 13, fontWeight: '600' }, targetType === 'weekly' && { color: '#FFF' }]}>Weekly</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.choice, { backgroundColor: c.card, borderColor: c.border }, targetType === 'monthly' && { backgroundColor: c.accent, borderColor: c.accent }]}
+                    onPress={() => setTargetType('monthly')}
+                    accessibilityRole="button"
+                    accessibilityLabel="Monthly target">
+                    <Text style={[{ color: c.text, fontSize: 13, fontWeight: '600' }, targetType === 'monthly' && { color: '#FFF' }]}>Monthly</Text>
+                  </Pressable>
+                </View>
+
+                <View style={{ marginTop: 10 }}>
+                  <FormField
+                    label="Target (number of activities)"
+                    value={targetValue}
+                    onChangeText={setTargetValue}
+                    placeholder="e.g. 5"
+                    keyboardType="numeric"
+                  />
+                </View>
+
+                <View style={{ marginTop: 6 }}>
+                  <PrimaryButton label="Save Target" onPress={saveTarget} />
+                  <View style={{ marginTop: 10 }}>
+                    <PrimaryButton label="Cancel" variant="secondary" onPress={resetForm} />
+                  </View>
+                </View>
+              </View>
+            ) : null}
+
+            {tgts.length === 0 && !showForm ? (
+              <Text style={{ color: c.textFaint, fontSize: 14, marginTop: 20, textAlign: 'center' }}>
+                No targets yet. Tap + Add Target to set one.
+              </Text>
+            ) : null}
+
+            {tgts.map((t) => (
+              <View key={t.id} style={[styles.henCard, { backgroundColor: c.card, borderColor: c.border }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <Text style={{ color: c.text, fontSize: 14, fontWeight: '600' }}>{t.label}</Text>
+                  <Text style={{ color: t.met ? c.success : '#D4853A', fontSize: 13, fontWeight: '700' }}>{t.met ? 'Done!' : `${t.goal - t.cur} to go`}</Text>
+                </View>
+                <View style={[styles.progTrack, { backgroundColor: c.trackBg }]}>
+                  <View style={[styles.progFill, { width: `${Math.min((t.cur / t.goal) * 100, 100)}%`, backgroundColor: t.met ? c.success : c.accent }]} />
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                  <Text style={{ color: c.textFaint, fontSize: 12 }}>{t.cur} / {t.goal}</Text>
+                  <Pressable onPress={() => deleteTarget(t.id)} accessibilityRole="button" accessibilityLabel="Delete target">
+                    <Text style={{ color: c.danger, fontSize: 13, fontWeight: '600' }}>Delete</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -123,4 +276,9 @@ const styles = StyleSheet.create({
   henRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   progTrack: { borderRadius: 6, height: 10, marginTop: 8, overflow: 'hidden' },
   progFill: { borderRadius: 6, height: 10 },
+  form: { borderRadius: 14, borderWidth: 1, marginBottom: 14, padding: 14 },
+  formTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12 },
+  choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  choice: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 },
+  chip: { borderRadius: 16, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
 });
