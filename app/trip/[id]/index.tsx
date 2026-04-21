@@ -1,14 +1,15 @@
+import WeatherCard from '@/components/WeatherCard';
 import InfoTag from '@/components/ui/info-tag';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
-import WeatherCard from '@/components/WeatherCard';
-import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
+import { exportTripToCSV } from '@/db/export';
 import { activities as activitiesTable, trips as tripsTable } from '@/db/schema';
+import { useColors } from '@/hooks/useColors';
 import { eq } from 'drizzle-orm';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useContext } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../../_layout';
 
@@ -48,6 +49,15 @@ export default function TripDetail() {
     setActivities(await db.select().from(activitiesTable));
   };
 
+  const handleExport = async () => {
+    try {
+      await exportTripToCSV(trip, activities, categories);
+    } catch (err) {
+      Alert.alert('Export failed', 'Could not export the plan. Please try again.');
+      console.error(err);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -59,10 +69,8 @@ export default function TripDetail() {
         </View>
         {trip.notes ? <Text style={{ color: c.textSoft, fontSize: 14, fontStyle: 'italic', marginBottom: 12 }}>{trip.notes}</Text> : null}
 
-        {/* Weather forecast for the destination */}
         <WeatherCard destination={trip.destination} />
 
-        {/* Budget card */}
         <View style={[styles.budgetCard, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>Budget</Text>
           <View style={styles.bRow}><Text style={{ color: c.textSoft }}>Total spent</Text><Text style={{ color: c.text, fontWeight: '600' }}>€{total}</Text></View>
@@ -80,7 +88,6 @@ export default function TripDetail() {
           ) : null}
         </View>
 
-        {/* Guest list summary */}
         <Pressable style={[styles.guestCard, { backgroundColor: c.card, borderColor: c.border }]} onPress={() => router.push({ pathname: '/trip/[id]/guests', params: { id } })}>
           <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 4 }}>Guest List</Text>
           <Text style={{ color: c.textSoft, fontSize: 14 }}>
@@ -93,7 +100,6 @@ export default function TripDetail() {
           <PrimaryButton compact label="Edit Hen" onPress={() => router.push({ pathname: '/trip/[id]/edit', params: { id } })} />
         </View>
 
-        {/* Activities */}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ color: c.text, fontSize: 20, fontWeight: '700' }}>Activities ({acts.length})</Text>
           <PrimaryButton compact label="+ Add" onPress={() => router.push({ pathname: '/trip/[id]/add-activity', params: { id } })} />
@@ -128,6 +134,8 @@ export default function TripDetail() {
         })}
 
         <View style={{ marginTop: 24, paddingBottom: 30 }}>
+          <PrimaryButton label="📤 Export Plan (CSV)" variant="secondary" onPress={handleExport} />
+          <View style={{ height: 10 }} />
           <PrimaryButton label="Delete Hen" variant="danger" onPress={delTrip} />
           <View style={{ height: 10 }} />
           <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
