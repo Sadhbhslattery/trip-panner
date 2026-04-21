@@ -1,8 +1,8 @@
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
-import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
 import { activities as activitiesTable, categories as categoriesTable, guests as guestsTable, targets as targetsTable, trips as tripsTable, users as usersTable } from '@/db/schema';
+import { useColors } from '@/hooks/useColors';
 import { eq } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 import { useContext } from 'react';
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionTitle, { color: c.text }]}>Account</Text>
         <PrimaryButton label="Log Out" variant="secondary" onPress={() => router.replace('/login')} />
         <View style={{ height: 10 }} />
-        <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} />
+        <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} accessibilityHint="Permanently deletes your account and all hens, activities and guests" />
       </View>
     </SafeAreaView>
   );

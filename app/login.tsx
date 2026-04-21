@@ -1,9 +1,9 @@
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
-import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
 import { users as usersTable } from '@/db/schema';
+import { useColors } from '@/hooks/useColors';
 import { eq } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -28,7 +28,7 @@ export default function LoginScreen() {
     <SafeAreaView style={{ backgroundColor: c.bg, flex: 1, padding: 20 }}>
       <ScreenHeader title="Welcome Back" subtitle="Log in to your hen planner." />
       <FormField label="Username" value={username} onChangeText={setUsername} placeholder="Enter your username" />
-      <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" />
+      <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" secureTextEntry />
       <View style={{ marginTop: 6 }}>
         <PrimaryButton label="Log In" onPress={handleLogin} />
         <View style={{ marginTop: 10 }}>

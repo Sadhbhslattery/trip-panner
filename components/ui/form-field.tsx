@@ -6,19 +6,49 @@ type Props = {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
+  accessibilityHint?: string;
+  keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
+  secureTextEntry?: boolean;
+  multiline?: boolean;
 };
 
-export default function FormField({ label, value, onChangeText, placeholder }: Props) {
+export default function FormField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  accessibilityHint,
+  keyboardType = 'default',
+  secureTextEntry = false,
+  multiline = false,
+}: Props) {
   const c = useColors();
   return (
-    <View style={styles.wrapper}>
-      <Text style={[styles.label, { color: c.textSoft }]}>{label}</Text>
+    <View style={styles.wrapper} accessible={false}>
+      <Text
+        style={[styles.label, { color: c.textSoft }]}
+        accessibilityRole="text"
+        nativeID={`label-${label}`}
+      >
+        {label}
+      </Text>
       <TextInput
         placeholder={placeholder ?? label}
         placeholderTextColor={c.textFaint}
         value={value}
         onChangeText={onChangeText}
-        style={[styles.input, { backgroundColor: c.input, borderColor: c.inputBorder, color: c.text }]}
+        keyboardType={keyboardType}
+        secureTextEntry={secureTextEntry}
+        multiline={multiline}
+        accessible={true}
+        accessibilityLabel={label}
+        accessibilityHint={accessibilityHint ?? `Enter ${label.toLowerCase()}`}
+        aria-labelledby={`label-${label}`}
+        style={[
+          styles.input,
+          { backgroundColor: c.input, borderColor: c.inputBorder, color: c.text },
+          multiline && { minHeight: 80, paddingTop: 10, textAlignVertical: 'top' },
+        ]}
       />
     </View>
   );

@@ -36,12 +36,25 @@ export default function TripDetail() {
 
   const getCat = (cid: number) => categories.find((x) => x.id === cid);
 
-  const delTrip = async () => {
-    await db.delete(activitiesTable).where(eq(activitiesTable.tripId, Number(id)));
-    await db.delete(tripsTable).where(eq(tripsTable.id, Number(id)));
-    setTrips(await db.select().from(tripsTable));
-    setActivities(await db.select().from(activitiesTable));
-    router.back();
+  const delTrip = () => {
+    Alert.alert(
+      'Delete Hen',
+      `Are you sure? This will permanently delete "${trip.name}" and all ${acts.length} ${acts.length === 1 ? 'activity' : 'activities'}.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await db.delete(activitiesTable).where(eq(activitiesTable.tripId, Number(id)));
+            await db.delete(tripsTable).where(eq(tripsTable.id, Number(id)));
+            setTrips(await db.select().from(tripsTable));
+            setActivities(await db.select().from(activitiesTable));
+            router.back();
+          },
+        },
+      ]
+    );
   };
 
   const delAct = async (aid: number) => {
@@ -136,7 +149,7 @@ export default function TripDetail() {
         <View style={{ marginTop: 24, paddingBottom: 30 }}>
           <PrimaryButton label="📤 Export Plan (CSV)" variant="secondary" onPress={handleExport} />
           <View style={{ height: 10 }} />
-          <PrimaryButton label="Delete Hen" variant="danger" onPress={delTrip} />
+          <PrimaryButton label="Delete Hen" variant="danger" onPress={delTrip} accessibilityHint="Permanently deletes this hen and all its activities" />
           <View style={{ height: 10 }} />
           <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
         </View>

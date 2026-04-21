@@ -1,9 +1,9 @@
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
-import { useColors } from '@/hooks/useColors';
 import { db } from '@/db/client';
 import { users as usersTable } from '@/db/schema';
+import { useColors } from '@/hooks/useColors';
 import { eq } from 'drizzle-orm';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -30,8 +30,8 @@ export default function RegisterScreen() {
     <SafeAreaView style={{ backgroundColor: c.bg, flex: 1, padding: 20 }}>
       <ScreenHeader title="Create Account" subtitle="Get started planning." />
       <FormField label="Username" value={username} onChangeText={setUsername} placeholder="Pick a username" />
-      <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Choose a password" />
-      <FormField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Type it again" />
+      <FormField label="Password" value={password} onChangeText={setPassword} placeholder="Choose a password" secureTextEntry />
+      <FormField label="Confirm Password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Type it again" secureTextEntry />
       <View style={{ marginTop: 6 }}>
         <PrimaryButton label="Create Account" onPress={handleRegister} />
         <View style={{ marginTop: 10 }}>
