@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseSync } from 'expo-sqlite';
 
-const sqlite = openDatabaseSync('henplanner3.db');
+const sqlite = openDatabaseSync('henplanner4.db');
 
 sqlite.execSync(`
   CREATE TABLE IF NOT EXISTS users (
