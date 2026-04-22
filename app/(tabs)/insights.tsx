@@ -5,17 +5,44 @@ import { db } from '@/db/client';
 import { targets as targetsTable } from '@/db/schema';
 import { useColors } from '@/hooks/useColors';
 import { eq } from 'drizzle-orm';
-import { useContext, useState } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../_layout';
 
-type Mode = 'spending' | 'time' | 'hens' | 'targets';
+type Mode = 'spending' | 'time' | 'hens' | 'timeline' | 'targets';
+type Period = 'day' | 'week' | 'month';
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const getWeekStart = (dateStr: string): string => {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayOfWeek = d.getDay();
+  const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  d.setDate(d.getDate() - offset);
+  return d.toISOString().split('T')[0];
+};
+
+const formatDayLabel = (dateStr: string): string => {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+};
+
+const formatWeekLabel = (dateStr: string): string => {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `Wk ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+};
+
+const formatMonthLabel = (monthStr: string): string => {
+  const [yearStr, monthNum] = monthStr.split('-');
+  return `${MONTHS[Number(monthNum) - 1]} ${yearStr}`;
+};
 
 export default function InsightsScreen() {
   const context = useContext(TripContext);
   const c = useColors();
   const [mode, setMode] = useState<Mode>('spending');
+  const [period, setPeriod] = useState<Period>('month');
   const [showForm, setShowForm] = useState(false);
   const [scope, setScope] = useState<'global' | 'category'>('global');
   const [selectedCatId, setSelectedCatId] = useState<number | null>(null);
@@ -50,6 +77,30 @@ export default function InsightsScreen() {
     const catName = t.categoryId ? categories.find((x) => x.id === t.categoryId)?.name || '?' : 'All';
     return { id: t.id, label: `${catName} (${t.targetType})`, cur: rel.length, goal: t.targetValue, met: rel.length >= t.targetValue };
   });
+
+  const timeline = useMemo(() => {
+    const buckets: Record<string, { key: string; label: string; total: number; count: number }> = {};
+    for (const a of activities) {
+      let key: string;
+      let label: string;
+      if (period === 'day') {
+        key = a.date;
+        label = formatDayLabel(a.date);
+      } else if (period === 'week') {
+        key = getWeekStart(a.date);
+        label = formatWeekLabel(key);
+      } else {
+        key = a.date.substring(0, 7);
+        label = formatMonthLabel(key);
+      }
+      if (!buckets[key]) buckets[key] = { key, label, total: 0, count: 0 };
+      buckets[key].total += a.cost;
+      buckets[key].count += 1;
+    }
+    return Object.values(buckets).sort((a, b) => a.key.localeCompare(b.key));
+  }, [activities, period]);
+
+  const maxTimeline = Math.max(...timeline.map((x) => x.total), 1);
 
   const resetForm = () => {
     setScope('global');
@@ -95,13 +146,14 @@ export default function InsightsScreen() {
 
   const tabs: { key: Mode; label: string }[] = [
     { key: 'spending', label: 'Spending' }, { key: 'time', label: 'Time' },
-    { key: 'hens', label: 'By Hen' }, { key: 'targets', label: 'Targets' },
+    { key: 'hens', label: 'By Hen' }, { key: 'timeline', label: 'Timeline' },
+    { key: 'targets', label: 'Targets' },
   ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.bg }]}>
       <ScreenHeader title="Insights" subtitle={`€${totalAll} across ${trips.length} hens`} />
-      <View style={styles.tabRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }} contentContainerStyle={styles.tabRow}>
         {tabs.map((t) => (
           <Pressable key={t.key}
             accessibilityRole="tab"
@@ -112,7 +164,8 @@ export default function InsightsScreen() {
             <Text style={[{ color: c.textSoft, fontSize: 13, fontWeight: '600' }, mode === t.key && { color: '#FFF' }]}>{t.label}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
+
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30, paddingTop: 16 }}>
         {mode === 'spending' ? spending.map((cat) => (
           <View key={cat.id} style={styles.barRow}>
@@ -123,6 +176,7 @@ export default function InsightsScreen() {
             <Text style={{ color: c.textFaint, fontSize: 12, width: 50, textAlign: 'right' }}>€{cat.total}</Text>
           </View>
         )) : null}
+
         {mode === 'time' ? time.map((cat) => (
           <View key={cat.id} style={styles.barRow}>
             <Text style={{ color: c.textSoft, fontSize: 13, width: 110 }}>{cat.icon} {cat.name}</Text>
@@ -132,6 +186,7 @@ export default function InsightsScreen() {
             <Text style={{ color: c.textFaint, fontSize: 12, width: 50, textAlign: 'right' }}>{cat.mins}m</Text>
           </View>
         )) : null}
+
         {mode === 'hens' ? hens.map((h) => (
           <View key={h.id} style={[styles.henCard, { backgroundColor: c.card, borderColor: c.border }]}>
             <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>{h.name}</Text>
@@ -150,6 +205,43 @@ export default function InsightsScreen() {
             ) : null}
           </View>
         )) : null}
+
+        {mode === 'timeline' ? (
+          <>
+            <View style={styles.periodRow}>
+              {(['day', 'week', 'month'] as Period[]).map((p) => (
+                <Pressable key={p}
+                  style={[styles.periodBtn, { backgroundColor: c.card, borderColor: c.border }, period === p && { backgroundColor: c.accent, borderColor: c.accent }]}
+                  onPress={() => setPeriod(p)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${p} view`}
+                  accessibilityState={{ selected: period === p }}>
+                  <Text style={[{ color: c.text, fontSize: 13, fontWeight: '600', textTransform: 'capitalize' }, period === p && { color: '#FFF' }]}>{p}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {timeline.length === 0 ? (
+              <Text style={{ color: c.textFaint, fontSize: 14, marginTop: 20, textAlign: 'center' }}>
+                No activities to chart yet.
+              </Text>
+            ) : timeline.map((bucket) => (
+              <View key={bucket.key} style={styles.barRow}>
+                <Text style={{ color: c.textSoft, fontSize: 12, width: 110 }}>{bucket.label}</Text>
+                <View style={[styles.track, { backgroundColor: c.trackBg }]}>
+                  <View style={[styles.fill, { backgroundColor: c.accent, width: `${(bucket.total / maxTimeline) * 100}%` }]} />
+                </View>
+                <Text style={{ color: c.textFaint, fontSize: 12, width: 50, textAlign: 'right' }}>€{bucket.total}</Text>
+              </View>
+            ))}
+
+            {timeline.length > 0 ? (
+              <Text style={{ color: c.textFaint, fontSize: 12, marginTop: 12, textAlign: 'center' }}>
+                {timeline.length} {period === 'day' ? 'day' : period}{timeline.length === 1 ? '' : 's'} with activity · {activities.length} activities total
+              </Text>
+            ) : null}
+          </>
+        ) : null}
 
         {mode === 'targets' ? (
           <>
@@ -267,7 +359,7 @@ export default function InsightsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, paddingHorizontal: 18, paddingTop: 10 },
-  tabRow: { flexDirection: 'row', gap: 8, marginTop: 12 },
+  tabRow: { flexDirection: 'row', gap: 8, paddingRight: 18 },
   tab: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 7 },
   barRow: { alignItems: 'center', flexDirection: 'row', marginBottom: 12 },
   track: { borderRadius: 6, flex: 1, height: 18, marginHorizontal: 8, overflow: 'hidden' },
@@ -281,4 +373,6 @@ const styles = StyleSheet.create({
   choiceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   choice: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8 },
   chip: { borderRadius: 16, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
+  periodRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  periodBtn: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
 });
