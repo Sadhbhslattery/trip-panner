@@ -119,8 +119,8 @@ A separate 2-3 page short report (accompanies this repo as part of the submissio
 
 ## References
 
-See [`REFERENCES.md`](./REFERENCES.md) for full attribution of external libraries, APIs, standards, and the module starter template.
+See REFERENCES.md for full attribution of external libraries, APIs, standards and the module starter template.
 
 ## Starter Project
 
-Built on top of the module starter template provided by Rory Pierce ([github.com/rorypierce111/react-native-lab](https://github.com/rorypierce111/react-native-lab)). The starter provided the base Expo Router setup, themed component primitives (`ThemedText`, `ThemedView`, `HelloWave`, etc.), and the `useColorScheme` hook. All hen-planner domain work, schema, seed data, screens and advanced features are original to this submission.
+Built on top of the module starter template provided by Rory Pierce ([github.com/rorypierce111/react-native-lab](https://github.com/rorypierce111/react-native-lab)). The starter provided the base Expo Router setup, themed component primitives (ThemedText, ThemedView, HelloWave, etc.) and useColorScheme. All hen-planner domain work, schema, seed data, screens and advanced features are original to this submission.
