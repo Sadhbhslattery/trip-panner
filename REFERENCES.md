@@ -6,6 +6,13 @@ Accessed April 2026 unless otherwise noted.
 
 ---
 
+## AI Colloboration 
+[R0] Claude (Anthropic)
+Anthropic. Claude (Opus 4.7 and Opus 4.6). AI assistant used as a collaborative coding and writing partner throughout the project.
+https://claude.ai/
+
+Claude was used across the project: debugging error messages (EAS authorisation failures, expo-sqlite web bundle crashes), drafting and reviewing TypeScript code, sanity-checking architectural decisions, generating seed data and writing the three required test files. Where Claude produced code, I read every line, and verified behaviour on device before committing. One bug surfaced during the final commenting pass, `activity/[id]/edit.tsx`. Catching it taught me how much prompt clarity matters for AI output quality. 
+
 # Frontend & Framework
 
 [R6] React — Hooks API Reference
@@ -22,6 +29,33 @@ Used to write the `FormField` component test and the home-screen integration tes
 Meta. JavaScript testing framework.
 https://jestjs.io/
 Used as the test runner, with the `jest-expo` preset that configures transform patterns for Expo modules. All three rubric-required tests (seed unit, FormField component, home-screen integration) run through Jest.
+
+[R13] Codevolution — React Native / Expo tutorial series (YouTube)
+Codevolution. Tutorials on React Native fundamentals, Expo Router, and React Hooks.
+https://www.youtube.com/@Codevolution
+Consulted for worked examples of Expo Router file-based navigation (Stack vs Tabs), useState/useEffect patterns and React Hooks fundamentals. Used particularly at the start of the project when setting up the tabs layout and the trip detail stack.
+
+---
+
+## Web Standards & Language Documentation
+
+[R14] MDN Web Docs
+Mozilla. Reference documentation for JavaScript, TypeScript and web standards.
+https://developer.mozilla.org/
+Used for Array.prototype.reduce, Array.prototype.filter, Array.prototype.some, Set and Date API references — especially while writing the streak calculation logic and the homescreen filter pipeline.
+
+[R15] Apple Human Interface Guidelines — Layout
+Apple Inc. Layout specifications including minimum tappable target size.
+https://developer.apple.com/design/human-interface-guidelines/layout
+Cited as the source for the 44pt minimum touch target applied to PrimaryButton during the accessibility pass.
+
+[R16] Stack Overflow — community threads
+Stack Overflow. Developer Q&A threads consulted while debugging specific problems.
+https://stackoverflow.com/
+Threads consulted during debugging included:
+- Masking password input in React Native (secureTextEntry on TextInput) - surfaced during the accessibility pass when I noticed passwords were rendering in plain text.
+- Fixing npm EACCES permission errors when attempting to install eas-cli globally on macOS — led to the decision to use npx eas-cli@latest instead of a global install, which avoids sudo and permission issues entirely.
+- EAS "Entity not authorised" errors when the project was linked to a different owner account than the current login — helped narrow the fix to editing app.json's owner field and stale projectId.
 
 ---
 
@@ -42,6 +76,16 @@ Used after CSV export to hand the generated file to the OS share sheet so the us
 Expo. Local SQLite database API for Expo apps.
 https://docs.expo.dev/versions/latest/sdk/sqlite/
 Underlies the persistence layer in `db/client.ts`. Provides the `openDatabaseSync` call and the low-level `execSync` used to create tables on first launch.
+
+[R17] Expo Router — File-based Routing
+Expo. Conventions for file-based routing in Expo applications.
+https://docs.expo.dev/router/introduction/
+Referenced for the app/(tabs)/ grouping, dynamic route segments (trip/[id], activity/[id]), and the _layout.tsx pattern used at the root and tabs levels.
+
+[R18] EAS Update
+Expo. Over-the-air bundle distribution for Expo apps.
+https://docs.expo.dev/eas-update/introduction/
+Used for distributing the app to markers via a shareable Expo Go link rather than building native binaries. The per-platform publish pattern (--platform ios then --platform android) was adopted after the default --platform=all behaviour failed on the web bundle because of a missing wasm file in expo-sqlite's web implementation.
 
 ---
 
