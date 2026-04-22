@@ -7,6 +7,7 @@ HenPlanner helps the maid of honour juggle the planning for one or more hen part
 Student:*Sadhbh Slattery (122350191)
 Module: IS4447 — Mobile Application Development
 Lecturer: Rory Pierce
+Option: B (Holiday / Trip Planner) - themes as a hen party planner
 
 ---
 
