@@ -10,7 +10,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../_layout';
 
-type Mode = 'spending' | 'time' | 'hens' | 'timeline' | 'targets';
+type Mode = 'spending' | 'time' | 'hens' | 'timeline' | 'streaks' | 'targets';
 type Period = 'day' | 'week' | 'month';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -20,6 +20,12 @@ const getWeekStart = (dateStr: string): string => {
   const dayOfWeek = d.getDay();
   const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   d.setDate(d.getDate() - offset);
+  return d.toISOString().split('T')[0];
+};
+
+const addDays = (dateStr: string, days: number): string => {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
   return d.toISOString().split('T')[0];
 };
 
@@ -102,6 +108,66 @@ export default function InsightsScreen() {
 
   const maxTimeline = Math.max(...timeline.map((x) => x.total), 1);
 
+  const streakStats = useMemo(() => {
+    if (activities.length === 0) {
+      return { currentTargetStreak: 0, longestTargetStreak: 0, longestDayStreak: 0, totalDaysPlanned: 0 };
+    }
+
+    // --- Target-based weekly streak (consecutive weeks hitting global weekly target) ---
+    const weeklyGlobalTarget = targets.find((t) => t.targetType === 'weekly' && t.categoryId === null);
+    let currentTargetStreak = 0;
+    let longestTargetStreak = 0;
+
+    if (weeklyGlobalTarget) {
+      const weekCounts: Record<string, number> = {};
+      for (const a of activities) {
+        const wk = getWeekStart(a.date);
+        weekCounts[wk] = (weekCounts[wk] || 0) + 1;
+      }
+      const weekKeys = Object.keys(weekCounts).sort();
+      let run = 0;
+      let prevKey: string | null = null;
+
+      for (const wk of weekKeys) {
+        const met = weekCounts[wk] >= weeklyGlobalTarget.targetValue;
+        const isConsecutive = prevKey === null || addDays(prevKey, 7) === wk;
+        if (met && (isConsecutive || run === 0)) {
+          run = isConsecutive ? run + 1 : 1;
+        } else {
+          run = 0;
+        }
+        if (run > longestTargetStreak) longestTargetStreak = run;
+        prevKey = wk;
+      }
+
+      // Current streak = the run ending at the most recent week
+      let lookback = weekKeys[weekKeys.length - 1];
+      while (lookback && weekCounts[lookback] >= weeklyGlobalTarget.targetValue) {
+        currentTargetStreak += 1;
+        const previous = addDays(lookback, -7);
+        if (weekCounts[previous] === undefined) break;
+        lookback = previous;
+      }
+    }
+
+    // --- Consecutive day streak (any activity, ignoring targets) ---
+    const uniqueDays = Array.from(new Set(activities.map((a) => a.date))).sort();
+    const totalDaysPlanned = uniqueDays.length;
+    let longestDayStreak = 0;
+    let dayRun = 1;
+    for (let i = 1; i < uniqueDays.length; i++) {
+      if (addDays(uniqueDays[i - 1], 1) === uniqueDays[i]) {
+        dayRun += 1;
+      } else {
+        if (dayRun > longestDayStreak) longestDayStreak = dayRun;
+        dayRun = 1;
+      }
+    }
+    if (dayRun > longestDayStreak) longestDayStreak = dayRun;
+
+    return { currentTargetStreak, longestTargetStreak, longestDayStreak, totalDaysPlanned };
+  }, [activities, targets]);
+
   const resetForm = () => {
     setScope('global');
     setSelectedCatId(null);
@@ -144,10 +210,12 @@ export default function InsightsScreen() {
     ]);
   };
 
+  const hasWeeklyGlobalTarget = targets.some((t) => t.targetType === 'weekly' && t.categoryId === null);
+
   const tabs: { key: Mode; label: string }[] = [
     { key: 'spending', label: 'Spending' }, { key: 'time', label: 'Time' },
     { key: 'hens', label: 'By Hen' }, { key: 'timeline', label: 'Timeline' },
-    { key: 'targets', label: 'Targets' },
+    { key: 'streaks', label: 'Streaks' }, { key: 'targets', label: 'Targets' },
   ];
 
   return (
@@ -240,6 +308,51 @@ export default function InsightsScreen() {
                 {timeline.length} {period === 'day' ? 'day' : period}{timeline.length === 1 ? '' : 's'} with activity · {activities.length} activities total
               </Text>
             ) : null}
+          </>
+        ) : null}
+
+        {mode === 'streaks' ? (
+          <>
+            <View style={[styles.streakHero, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 4 }}>CURRENT WEEKLY STREAK</Text>
+              <Text style={{ color: c.accent, fontSize: 44, fontWeight: '800' }}>
+                {streakStats.currentTargetStreak}
+                <Text style={{ color: c.textFaint, fontSize: 18, fontWeight: '600' }}>  {streakStats.currentTargetStreak === 1 ? 'week' : 'weeks'}</Text>
+              </Text>
+              <Text style={{ color: c.textFaint, fontSize: 13, marginTop: 4 }}>
+                {hasWeeklyGlobalTarget
+                  ? 'Consecutive weeks hitting your global weekly target'
+                  : 'Set a global weekly target to start tracking'}
+              </Text>
+            </View>
+
+            <View style={styles.streakRow}>
+              <View style={[styles.streakBox, { backgroundColor: c.card, borderColor: c.border }]}>
+                <Text style={{ color: c.textSoft, fontSize: 12, fontWeight: '600', marginBottom: 4 }}>LONGEST TARGET STREAK</Text>
+                <Text style={{ color: c.text, fontSize: 28, fontWeight: '700' }}>
+                  {streakStats.longestTargetStreak}
+                  <Text style={{ color: c.textFaint, fontSize: 13, fontWeight: '600' }}> wk</Text>
+                </Text>
+              </View>
+              <View style={[styles.streakBox, { backgroundColor: c.card, borderColor: c.border }]}>
+                <Text style={{ color: c.textSoft, fontSize: 12, fontWeight: '600', marginBottom: 4 }}>LONGEST ACTIVITY STREAK</Text>
+                <Text style={{ color: c.text, fontSize: 28, fontWeight: '700' }}>
+                  {streakStats.longestDayStreak}
+                  <Text style={{ color: c.textFaint, fontSize: 13, fontWeight: '600' }}> days</Text>
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.streakSummary, { backgroundColor: c.card, borderColor: c.border }]}>
+              <Text style={{ color: c.textSoft, fontSize: 13 }}>
+                <Text style={{ color: c.text, fontWeight: '700' }}>{streakStats.totalDaysPlanned}</Text> total planning days logged across <Text style={{ color: c.text, fontWeight: '700' }}>{trips.length}</Text> {trips.length === 1 ? 'hen' : 'hens'}.
+              </Text>
+            </View>
+
+            <Text style={{ color: c.textFaint, fontSize: 12, marginTop: 14, textAlign: 'center', lineHeight: 17, paddingHorizontal: 10 }}>
+              Target streak = consecutive weeks hitting your weekly target.{'\n'}
+              Activity streak = longest run of back-to-back days with a logged activity.
+            </Text>
           </>
         ) : null}
 
@@ -375,4 +488,8 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 16, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6 },
   periodRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   periodBtn: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
+  streakHero: { alignItems: 'center', borderRadius: 16, borderWidth: 1, marginBottom: 12, padding: 22 },
+  streakRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  streakBox: { alignItems: 'center', borderRadius: 14, borderWidth: 1, flex: 1, padding: 16 },
+  streakSummary: { borderRadius: 12, borderWidth: 1, padding: 14 },
 });
