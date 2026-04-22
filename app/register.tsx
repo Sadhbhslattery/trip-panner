@@ -1,3 +1,19 @@
+/**
+ * Register Screen (Login System — Rubric Requirement)
+ * 
+ * Creates a new user account in the local SQLite users table.
+ *
+ * Validation chain, in order:
+ * 1. Both fields filled
+ * 2. Password and confirm-password match
+ * 3. Username is not already taken
+ *
+ * Order matters — cheaper checks (field presence, match) run before the DB lookup, so we don't hit SQLite when the form is obviously invalid.
+ *
+ * On success: alert the user, then redirect to /login rather than auto-logging them in. This confirms the account was created and matches the convention
+ * most real-world apps follow (explicit sign-in after sign-up).
+ */
+
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
@@ -18,10 +34,14 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const handleRegister = async () => {
+    // Cheap validations first — avoid hitting SQLite until the form looks OK
     if (!username || !password) { Alert.alert('Error', 'Please fill in all fields.'); return; }
     if (password !== confirmPassword) { Alert.alert('Error', 'Passwords do not match.'); return; }
+
+    // Uniqueness check — prevents duplicate usernames in a local DB that has no unique constraint on the column (flagged in report)
     const existing = await db.select().from(usersTable).where(eq(usersTable.username, username));
     if (existing.length > 0) { Alert.alert('Error', 'Username already taken.'); return; }
+
     await db.insert(usersTable).values({ username, password });
     Alert.alert('Success', 'Account created!', [{ text: 'OK', onPress: () => router.replace('/login') }]);
   };

@@ -1,3 +1,20 @@
+/**
+ * Trip Detail Screen — Full Hen Overview + Activity Management
+ * 
+ * The main working screen for a single hen. Shows:
+ * - Trip metadata (dates, guests, notes)
+ * - Weather forecast for the destination (external API [R4])
+ * - Budget card with progress bar and over-budget warning
+ * - Guest list summary (tappable → full guest management screen)
+ * - Activity list with inline edit/delete controls
+ * - Action buttons: Export Plan (CSV), Delete Hen, Back
+ *
+ * Cross-cutting patterns used on this screen:
+ * - Destructive actions confirmed via Alert.alert (Delete Hen, Delete Activity)
+ * - All aggregated numbers (total, per-person, remaining) derived from raw activities array, so they stay accurate after any edit
+ * - CSV export hands off to the shared exportTripToCSV helper [R1][R2][R3]
+ */
+
 import WeatherCard from '@/components/WeatherCard';
 import InfoTag from '@/components/ui/info-tag';
 import PrimaryButton from '@/components/ui/primary-button';
@@ -24,6 +41,7 @@ export default function TripDetail() {
   const trip = trips.find((t) => t.id === Number(id));
   if (!trip) return null;
 
+  // All aggregates are derived inline from the raw data so they update automatically when the activities list changes
   const acts = activities.filter((a) => a.tripId === trip.id);
   const tGuests = guests.filter((g) => g.tripId === trip.id);
   const confirmed = tGuests.filter((g) => g.attending === 'full' || g.attending === 'partial').length;
@@ -36,6 +54,10 @@ export default function TripDetail() {
 
   const getCat = (cid: number) => categories.find((x) => x.id === cid);
 
+  /**
+   * Destructive: delete the whole hen (trip and all its activities).
+   * Confirmation message includes the hen name and activity count so the user can see exactly what's being lost.
+   */
   const delTrip = () => {
     Alert.alert(
       'Delete Hen',
@@ -46,6 +68,7 @@ export default function TripDetail() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            // Delete activities first, then the trip itself
             await db.delete(activitiesTable).where(eq(activitiesTable.tripId, Number(id)));
             await db.delete(tripsTable).where(eq(tripsTable.id, Number(id)));
             setTrips(await db.select().from(tripsTable));
@@ -57,11 +80,15 @@ export default function TripDetail() {
     );
   };
 
+  /** Delete a single activity and refresh the activities list */
   const delAct = async (aid: number) => {
     await db.delete(activitiesTable).where(eq(activitiesTable.id, aid));
     setActivities(await db.select().from(activitiesTable));
   };
 
+  /**
+   * CSV export handler — wraps the shared exporter in try/catch so a file-system or share-sheet failure surfaces an error dialog rather than crashing the app
+   */
   const handleExport = async () => {
     try {
       await exportTripToCSV(trip, activities, categories);
@@ -82,8 +109,10 @@ export default function TripDetail() {
         </View>
         {trip.notes ? <Text style={{ color: c.textSoft, fontSize: 14, fontStyle: 'italic', marginBottom: 12 }}>{trip.notes}</Text> : null}
 
+        {/* External API feature — weather for the destination */}
         <WeatherCard destination={trip.destination} />
 
+        {/* Budget card with progress bar and over/under indicator */}
         <View style={[styles.budgetCard, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 8 }}>Budget</Text>
           <View style={styles.bRow}><Text style={{ color: c.textSoft }}>Total spent</Text><Text style={{ color: c.text, fontWeight: '600' }}>€{total}</Text></View>
@@ -101,6 +130,7 @@ export default function TripDetail() {
           ) : null}
         </View>
 
+        {/* Guest list summary — tappable to full guest CRUD screen */}
         <Pressable style={[styles.guestCard, { backgroundColor: c.card, borderColor: c.border }]} onPress={() => router.push({ pathname: '/trip/[id]/guests', params: { id } })}>
           <Text style={{ color: c.text, fontSize: 16, fontWeight: '700', marginBottom: 4 }}>Guest List</Text>
           <Text style={{ color: c.textSoft, fontSize: 14 }}>
@@ -125,6 +155,7 @@ export default function TripDetail() {
           return (
             <View key={a.id} style={[styles.actCard, { backgroundColor: c.card, borderColor: c.border }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {/* Category colour dot and icon — lets the user spot categories at a glance */}
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: cat?.colour || '#9CA3AF', marginRight: 8 }} />
                 <Text style={{ color: c.text, fontSize: 16, fontWeight: '600', flex: 1 }}>{cat?.icon || '📌'} {a.name}</Text>
               </View>
@@ -149,7 +180,12 @@ export default function TripDetail() {
         <View style={{ marginTop: 24, paddingBottom: 30 }}>
           <PrimaryButton label="📤 Export Plan (CSV)" variant="secondary" onPress={handleExport} />
           <View style={{ height: 10 }} />
-          <PrimaryButton label="Delete Hen" variant="danger" onPress={delTrip} accessibilityHint="Permanently deletes this hen and all its activities" />
+          <PrimaryButton
+            label="Delete Hen"
+            variant="danger"
+            onPress={delTrip}
+            accessibilityHint="Permanently deletes this hen and all its activities"
+          />
           <View style={{ height: 10 }} />
           <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
         </View>

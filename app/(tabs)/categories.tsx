@@ -1,3 +1,15 @@
+/**
+ * Categories Screen — Full CRUD with Colour and Icon Picker
+ * 
+ * Rubric: "Create and edit categories with a name and colour/icon; all records must reference a category."
+ *
+ * Implementation notes:
+ * - Single screen handles both create and edit modes, differentiated by the `editingId` state. When editingId is null the form acts as Create.
+ * - Colour and icon are picked from fixed palettes rather than free-text. This guarantees visual consistency across the insights charts (which
+ * use the category's colour to fill bars) and removes the need for an emoji picker library.
+ * - Delete is wrapped in Alert.alert with a destructive-style confirmation, matching the pattern used on Delete Hen and Delete Account.
+ */
+
 import FormField from '@/components/ui/form-field';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
@@ -10,6 +22,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TripContext } from '../_layout';
 
+// Fixed palettes — picking from these keeps the visual system consistent
 const COLOURS = ['#D4537E', '#C084FC', '#F59E0B', '#34D399', '#818CF8', '#F97316', '#64748B', '#0EA5E9'];
 const ICONS = ['🍹', '💅', '🍽️', '🎲', '💃', '🎨', '🚐', '🏨', '🎤', '🛥️', '🎀', '🧖'];
 
@@ -17,6 +30,7 @@ export default function CategoriesScreen() {
   const context = useContext(TripContext);
   const c = useColors();
   const [showForm, setShowForm] = useState(false);
+  // editingId drives create vs edit mode: null = creating, number = editing
   const [editingId, setEditingId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [colour, setColour] = useState(COLOURS[0]);
@@ -27,12 +41,17 @@ export default function CategoriesScreen() {
 
   const reset = () => { setName(''); setColour(COLOURS[0]); setIcon(ICONS[0]); setEditingId(null); setShowForm(false); };
 
+  /** Populate the form with an existing category's values for editing */
   const startEdit = (id: number) => {
     const cat = categories.find((x) => x.id === id);
     if (!cat) return;
     setName(cat.name); setColour(cat.colour); setIcon(cat.icon); setEditingId(id); setShowForm(true);
   };
 
+  /**
+   * Save handler — branches on editingId to either INSERT a new row or
+   * UPDATE an existing one. After either path, refresh categories from Db so the list re-renders with the new/changed row.
+   */
   const save = async () => {
     if (!name) return;
     if (editingId) { await db.update(categoriesTable).set({ name, colour, icon }).where(eq(categoriesTable.id, editingId)); }

@@ -1,3 +1,17 @@
+/**
+* Home Screen — Hens List with Search & Multi-Filter     
+ * The landing page after login. Shows all planned hens as cards and supports three overlapping filter dimensions (rubric: text and date range and category):
+ *
+ * 1. Text search — matches hen name OR destination (case-insensitive)
+ * 2. Date range  — "From" and/or "To" ISO dates; matches hens whose trip dates overlap the range (not strict containment)
+ * 3. Category filter — shows only hens with at least one activity in the chosen category
+ *
+ * All three filters combine with AND logic and run through a single useMemo pass [R6] so heavy list operations don't rerun on unrelated renders.
+ *
+ * The filter panel is collapsible with an active-count badge ("Filters (2 active)") so the user always knows what's applied even when the panel is
+ * hidden. This is a common pattern in iOS/Android apps where screen real estate is scarce.
+ */
+
 import InfoTag from '@/components/ui/info-tag';
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
@@ -21,18 +35,27 @@ export default function IndexScreen() {
   if (!context) return null;
   const { trips, activities, categories } = context;
 
+  /**
+   * Combined filter pipeline. All three dimensions are evaluated per trip; the trip is included only if every active dimension passes.
+   * Date overlap logic:
+   * A trip is excluded if its entire date range falls outside [dateFrom, dateTo].
+   * - If dateFrom is set and the trip ENDS before dateFrom, exclude.
+   * - If dateTo is set and the trip STARTS after dateTo, exclude.
+   * this means any overlap counts as a match (inclusive behaviour).
+   * useMemo [R6] memoises the result so re-renders caused by other state (e.g. toggling the filter panel) don't re-run the filter loop.
+   */
   const filtered = useMemo(() => {
     const q = searchText.toLowerCase();
     return trips.filter((t) => {
-      // Text filter
+      // Text filter — match on name OR destination
       const textMatch = !q || t.name.toLowerCase().includes(q) || t.destination.toLowerCase().includes(q);
       if (!textMatch) return false;
 
-      // Date range filter (trip overlaps the range at all)
+      // Date range filter — overlap, not strict containment
       if (dateFrom && t.endDate < dateFrom) return false;
       if (dateTo && t.startDate > dateTo) return false;
 
-      // Category filter (trip has at least one activity in this category)
+      // Category filter — trip must have at least one activity in chosen category
       if (categoryId !== null) {
         const hasCategory = activities.some((a) => a.tripId === t.id && a.categoryId === categoryId);
         if (!hasCategory) return false;
@@ -42,6 +65,7 @@ export default function IndexScreen() {
     });
   }, [trips, activities, searchText, dateFrom, dateTo, categoryId]);
 
+  // Counts how many filter dimensions are currently active (for badge display)
   const activeFilterCount = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0) + (categoryId !== null ? 1 : 0);
 
   const clearFilters = () => {
@@ -64,6 +88,7 @@ export default function IndexScreen() {
         accessibilityLabel="Search hens by name or destination"
       />
 
+      {/* Filters toggle — badge shows active count even when collapsed */}
       <Pressable
         style={[styles.filterToggle, { backgroundColor: c.card, borderColor: c.border }]}
         onPress={() => setShowFilters((v) => !v)}
@@ -106,6 +131,7 @@ export default function IndexScreen() {
 
           <Text style={{ color: c.textSoft, fontSize: 13, fontWeight: '600', marginBottom: 6, marginTop: 10 }}>Category</Text>
           <View style={styles.chipRow}>
+            {/* "All" chip resets categoryId to null */}
             <Pressable
               style={[styles.chip, { backgroundColor: c.bg, borderColor: c.border }, categoryId === null && { backgroundColor: c.accent, borderColor: c.accent }]}
               onPress={() => setCategoryId(null)}
@@ -134,6 +160,7 @@ export default function IndexScreen() {
       ) : null}
 
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        {/* Contextual empty state — differentiates "no data" from "no matches" */}
         {filtered.length === 0 ? (
           <Text style={[styles.empty, { color: c.textFaint }]}>
             {searchText || activeFilterCount > 0
@@ -142,6 +169,7 @@ export default function IndexScreen() {
           </Text>
         ) : null}
         {filtered.map((trip) => {
+          // Per-card summary maths — kept inline because it's derived, not stored
           const acts = activities.filter((a) => a.tripId === trip.id);
           const total = acts.reduce((s, a) => s + a.cost, 0);
           const pp = trip.guestCount > 0 ? Math.round(total / trip.guestCount) : 0;

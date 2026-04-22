@@ -1,3 +1,19 @@
+/**
+ * Profile Screen — Account Management and Theme Toggle
+ * 
+ * Brief covers two requirements on this screen:
+ * - Login System (2 marks): logout and delete-profile flows
+ * - Light/Dark Mode Toggle (Advanced Feature, 2 marks): toggle and persistence
+ *
+ * Delete Account behaviour:
+ * Wipes every single user-owned row (guests, activities, targets, trips, categories, users) and resets the in-memory state. Protected by an
+ * Alert.alert confirmation because the action is unrecoverable. After deletion, the user is redirected to /register.
+ *
+ * Theme toggle:
+ *   Delegates to toggleTheme from TripContext, which persists the choice
+ *   to SQLite — see app/_layout.tsx for the persistence flow.
+ */
+
 import PrimaryButton from '@/components/ui/primary-button';
 import ScreenHeader from '@/components/ui/screen-header';
 import { db } from '@/db/client';
@@ -18,8 +34,18 @@ export default function ProfileScreen() {
   if (!context) return null;
   const { trips, activities, guests, isDark, toggleTheme, setTrips, setActivities, setCategories, setTargets, setGuests } = context;
 
+  // Summary number for the profile card (total euros across every activity)
   const totalCost = activities.reduce((s, a) => s + a.cost, 0);
 
+  /**
+   * Destructive: wipes the user's entire data set.
+   *
+   * Deletion order matters if foreign keys were enforced — we delete child tables before parents as a matter of good practice even though SQLite
+   * here isn't enforcing FKs. This order also matches the UI "cascade"
+   * expectation: guests and activities disappear before the trips they belonged to.
+   *
+   * NOTE: currently hardcoded to delete user id = 1. This is a known limitation of the single-user demo setup — flagged in the report.
+   */
   const handleDeleteAccount = () => {
     Alert.alert('Delete Account', 'This will permanently delete everything.', [
       { text: 'Cancel', style: 'cancel' },
@@ -32,6 +58,7 @@ export default function ProfileScreen() {
           await db.delete(tripsTable);
           await db.delete(categoriesTable);
           await db.delete(usersTable).where(eq(usersTable.id, 1));
+          // Clear in-memory state so no stale data survives the navigation
           setTrips([]); setActivities([]); setCategories([]); setTargets([]); setGuests([]);
           router.replace('/register');
         },
@@ -59,6 +86,7 @@ export default function ProfileScreen() {
               {isDark ? 'On — easy on the eyes' : 'Off — light and bright'}
             </Text>
           </View>
+          {/* Switch toggles theme AND persists to SQLite via toggleTheme [R7] */}
           <Switch
             value={isDark}
             onValueChange={toggleTheme}
@@ -72,7 +100,12 @@ export default function ProfileScreen() {
         <Text style={[styles.sectionTitle, { color: c.text }]}>Account</Text>
         <PrimaryButton label="Log Out" variant="secondary" onPress={() => router.replace('/login')} />
         <View style={{ height: 10 }} />
-        <PrimaryButton label="Delete Account" variant="danger" onPress={handleDeleteAccount} accessibilityHint="Permanently deletes your account and all hens, activities and guests" />
+        <PrimaryButton
+          label="Delete Account"
+          variant="danger"
+          onPress={handleDeleteAccount}
+          accessibilityHint="Permanently deletes your account and all hens, activities, and guests"
+        />
       </View>
     </SafeAreaView>
   );

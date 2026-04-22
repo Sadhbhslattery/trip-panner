@@ -1,6 +1,33 @@
-import { db } from './client';
-import { users, trips, categories, activities, targets, guests } from './schema';
+/**
+ * Seed Script — Sample Data for First Launch and Demo
+ * 
+ * Populates every core table with realistic sample data on first app launch, so the insights, charts and filters all have something to show without
+ * the user needing to manually enter data first. This Also serves the demo video.
+ *
+ * Seed contents:
+ * - 1 demo user (username: "demo", password: "password123") 
+ * - 8 categories (Drinks, Pampering, Food, Games, Nightlife, Activities, Transport, Accommodation) with pink/plum/neutral palette
+ * - 3 trips across Galway, Killarney and Lisbon (realistic Irish hen routes I assume)
+ * - 29 activities spanning July–September with realistic spots and costs
+ * - 25 guests with dietary notes and attendance statuses
+ * - 3 targets (mix of global weekly, category weekly, global monthly)
+ *
+ * Idempotency: seedIfEmpty() checks whether the users table is empty before inserting anything. This means calling it on every app launch is safe —
+ * the guard prevents duplicate seed data if the function runs more than once.
+ * (This behaviour is verified by the unit test in __tests__/seed.test.ts.)
+ *
+ * Design choice: explicit IDs (id: 1, id: 2, id: 3) are used for trips and categories so the foreign-key references across activities, guests and
+ * targets can be written inline without lookup queries. This keeps the seed file readable and deterministic.
+ * 
+ */
 
+import { db } from './client';
+import { activities, categories, guests, targets, trips, users } from './schema';
+
+/**
+ * Seeds the database only if it's currently empty (no users rows).
+ * Safe to call on every app launch — the empty-check is the idempotency guard.
+ */
 export async function seedIfEmpty() {
   const existingUsers = await db.select().from(users);
   if (existingUsers.length > 0) return;
@@ -9,6 +36,7 @@ export async function seedIfEmpty() {
     { id: 1, username: 'demo', password: 'password123' },
   ]);
 
+  // Categories — pink/plum accent palette mixed with neutral tones for contrast and a bit of fun for the girls
   await db.insert(categories).values([
     { id: 1, userId: 1, name: 'Drinks', colour: '#D4537E', icon: '🍹' },
     { id: 2, userId: 1, name: 'Pampering', colour: '#C084FC', icon: '💅' },
@@ -20,7 +48,8 @@ export async function seedIfEmpty() {
     { id: 8, userId: 1, name: 'Accommodation', colour: '#0EA5E9', icon: '🏨' },
   ]);
 
-  // ---- Hen 1: Galway ----
+  // Hen 1: Galway (July)
+  // Big group (12), moderate budget, classic Irish hen format with a surprise activity
   await db.insert(trips).values([{
     id: 1, userId: 1,
     name: 'Sarah\'s Hen - Galway',
@@ -60,14 +89,15 @@ export async function seedIfEmpty() {
     { tripId: 1, name: 'Deirdre', phone: '085 234 5678', dietary: null, attending: 'full', notes: 'Sarah\'s sister' },
   ]);
 
-  // ---- Hen 2: Killarney ----
+  // Hen 2: Killarney (August)
+  // Smaller group (8), spa-focused chilled hen (contrast to the party hen above)
   await db.insert(trips).values([{
     id: 2, userId: 1,
     name: 'Aoife\'s Hen - Killarney',
     destination: 'Killarney, Kerry',
     startDate: '2025-08-22', endDate: '2025-08-24',
     guestCount: 8, budget: 2000,
-    notes: 'Bride: Aoife. Smaller group, she wants something chilled. No L-plates!',
+    notes: 'Bride: Aoife. Smaller group, she wants something chilled. No L-plates or cheeky straws. Keep it classy girls!',
   }]);
 
   await db.insert(activities).values([
@@ -92,7 +122,9 @@ export async function seedIfEmpty() {
     { tripId: 2, name: 'Jen', phone: '083 888 9999', dietary: null, attending: 'unsure', notes: 'Has a wedding that weekend - checking dates' },
   ]);
 
-  // ---- Hen 3: Lisbon ----
+  // Hen 3: Lisbon (September) 
+  // Destination hen with a big budget and mix of Irish/UK guests — tests
+  // the filter, export and weather features with a non-Irish location
   await db.insert(trips).values([{
     id: 3, userId: 1,
     name: 'Emma\'s Hen - Lisbon',
@@ -122,6 +154,10 @@ export async function seedIfEmpty() {
     { tripId: 3, name: 'Beth', phone: null, dietary: null, attending: 'full', notes: 'Flying from Manchester' },
   ]);
 
+  // Targets — a mix to demonstrate every rubric requirement:
+  // - Per-category weekly (Food, 3/week)
+  // - Per-category weekly (Activities, 2/week)
+  // - Global monthly (15 activities/month across all categories)
   await db.insert(targets).values([
     { userId: 1, categoryId: 3, targetType: 'weekly', targetValue: 3 },
     { userId: 1, categoryId: 6, targetType: 'weekly', targetValue: 2 },
