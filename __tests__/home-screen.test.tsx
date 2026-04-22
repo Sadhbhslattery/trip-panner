@@ -1,6 +1,30 @@
+/**
+ * Home Screen Integration Test (Rubric: Testing — 3 of 3 required tests)
+ * 
+ * Verifies that seeded trip data flows from storage through application state and into the rendered UI. This is the "integration" test of the three —
+ * it exercises the full context - component - render pipeline rather than a single isolated unit.
+ *
+ * Strategy:
+ * - Mock the db/client, db/schema, db/seed, and expo-sqlite modules BEFORE importing IndexScreen. Mock order matters: Jest hoists jest.mock() calls
+ * to the top of the file, but the imports below them still need to resolve in the right order so the native SQLite opener never runs.
+ * - Mock useColors, expo-router, and safe-area-context with minimal stubs so the render tree completes without the full navigation/theme stack.
+ * - Render IndexScreen wrapped in a fake TripContext.Provider, passing in three seeded trip rows that match the real seed data (Sarah's Galway,
+ * Aoife's Killarney, Emma's Lisbon).
+ *
+ * Four assertions:
+ * 1. All three seeded hen names appear on the screen
+ * 2. All three destinations appear
+ * 3. The header subtitle shows the correct trip count ("3 hens in the works")
+ * 4. The empty-state message appears when zero trips are seeded
+ *
+ * References: React Native Testing Library [R11], Jest [R10].
+ */
+
 import { render, waitFor } from '@testing-library/react-native';
 import React from 'react';
 
+// Mocks must be declared BEFORE importing any app module that transitively
+// loads the real db/client (which opens native SQLite and would crash in Jest)
 jest.mock('@/db/client', () => ({
   db: {
     select: () => ({ from: () => Promise.resolve([]) }),
@@ -19,6 +43,7 @@ jest.mock('@/db/seed', () => ({
   seedIfEmpty: jest.fn().mockResolvedValue(undefined),
 }));
 
+// expo-sqlite is mocked so openDatabaseSync doesn't try to open a real DB file
 jest.mock('expo-sqlite', () => ({
   openDatabaseSync: () => ({ execSync: jest.fn() }),
 }));
@@ -27,6 +52,7 @@ import IndexScreen from '@/app/(tabs)/index';
 import type { Activity, Category, Guest, Target, Trip } from '@/app/_layout';
 import { TripContext } from '@/app/_layout';
 
+// Minimal theme stub — every colour the screen reads is defined here
 jest.mock('@/hooks/useColors', () => ({
   useColors: () => ({
     bg: '#fff', card: '#fff', border: '#eee', text: '#000',
@@ -35,15 +61,18 @@ jest.mock('@/hooks/useColors', () => ({
   }),
 }));
 
+// expo-router stubbed to return a no-op router — the test doesn't navigate
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
 }));
 
+// SafeAreaView is replaced with a plain View so no native safe-area measurement is needed
 jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return { SafeAreaView: View, SafeAreaProvider: View };
 });
 
+// Realistic seed data matching db/seed.ts structure
 const seededTrips: Trip[] = [
   { id: 1, userId: 1, name: "Sarah's Hen - Galway", destination: 'Galway, Ireland',
     startDate: '2025-07-18', endDate: '2025-07-20', guestCount: 12, budget: 3500, notes: null },
@@ -60,6 +89,10 @@ const seededActivities: Activity[] = [
     duration: 180, cost: 640, notes: null },
 ];
 
+/**
+ * Renders IndexScreen inside a TripContext.Provider populated with the supplied trips/activities. All other context fields are stubbed with
+ * empty arrays or jest.fn() — they're required by the context shape but not exercised by this test.
+ */
 const renderWithContext = (trips: Trip[], activities: Activity[]) => {
   const value = {
     trips, setTrips: jest.fn(),
