@@ -10,6 +10,19 @@ Lecturer: Rory Pierce
 Option: B (Holiday / Trip Planner) - themes as a hen party planner
 
 ---
+Links to project
+
+**GitHub Repository:** <https://github.com/Sadhbhslattery/trip-panner>
+
+**Expo Go link:** <https://expo.dev/accounts/sslattery/projects/hen-planner>
+
+[Expo Go QR Code](assets/expo-qr.png)
+
+**Demo login:** `demo` / `password123` 
+
+**Note on SDK version:** HenPlanner is built on Expo SDK 54.
+
+---
 
 Features
 
