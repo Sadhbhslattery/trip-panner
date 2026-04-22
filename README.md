@@ -16,7 +16,9 @@ Links to project
 
 **Expo Go link:** <https://expo.dev/accounts/sslattery/projects/hen-planner>
 
-[Expo Go QR Code](assets/expo-qr.png)
+**Direct Expo Go link:** exp://u.expo.dev/39d9611d-6f39-409b-832f-de042360e223/group/19dbb916-d9ff-4341-b280-901a7bc22cf5
+
+[Expo Go QR Code](assets/images/QRcode.png)
 
 **Demo login:** `demo` / `password123` 
 
