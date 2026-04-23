@@ -4,10 +4,10 @@ A mobile app for planning hen parties — built for IS4447: Mobile Application D
 
 HenPlanner helps the maid of honour juggle the planning for one or more hen parties: budget tracking, activity scheduling, guest management with dietary notes, weather forecasts for the destination, spending insights, target streaks and CSV export to share the plan over WhatsApp or email.
 
-Student:*Sadhbh Slattery (122350191)
+Student:Sadhbh Slattery (122350191)
 Module: IS4447 — Mobile Application Development
 Lecturer: Rory Pierce
-Option: B (Holiday / Trip Planner) - themes as a hen party planner
+Option: B (Holiday / Trip Planner) - themed as a hen party planner
 
 ---
 Links to project
@@ -18,12 +18,52 @@ Links to project
 
 **Direct Expo Go link:** `exp://u.expo.dev/39d9611d-6f39-409b-832f-de042360e223/group/c4ff4ddd-1e60-4e76-b042-dc086b7f1104`
 
-[Expo Go QR Code](assets/images/QRcode.png)
+Expo Go QR Code found @ (assets/images/QRcode.png)
 
 **Demo login:** `demo` / `password123` 
 
 **Note on SDK version:** HenPlanner is built on Expo SDK 54.
 
+---
+**App Name:** HenPlanner
+**Option:** B (Holiday / Trip Planner) — themed as a hen party planner
+**Student:** Sadhbh Slattery (122350191)
+**Module:** IS4447 — Mobile Application Development
+**Lecturer:** Rory Pierce
+
+---
+
+## Links to project
+
+**GitHub Repository:** <https://github.com/Sadhbhslattery/trip-panner>
+
+**Expo Project Page:** <https://expo.dev/accounts/sslattery/projects/hen-planner>
+
+**Direct Expo Go link:** `exp://u.expo.dev/39d9611d-6f39-409b-832f-de042360e223/group/c4ff4ddd-1e60-4e76-b042-dc086b7f1104`
+
+![Expo Go QR Code](assets/images/QRcode.png)
+
+**Demo login:** `demo` / `password123`
+
+> **Note on SDK version:** HenPlanner is built on Expo SDK 54. Expo Go from the App Store only supports the latest SDK, so if SDK 55+ has shipped, install an SDK 54 build of Expo Go from [expo.dev/go](https://expo.dev/go).
+
+---
+
+## Quick start
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/Sadhbhslattery/trip-panner.git
+cd trip-panner
+
+# 2. Install dependencies
+npm install
+
+# 3. Start the Expo dev server
+npx expo start
+
+# 4. Scan the QR code in the terminal with Expo Go
+```
 ---
 
 Features
